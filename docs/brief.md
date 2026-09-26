@@ -185,7 +185,7 @@ The UI and the background manager are two separate programs that talk through a 
 | Layer | Choice | Why |
 | --- | --- | --- |
 | Desktop shell | Tauri (Mac build only for now) | Uses less memory than Electron; can bundle the C# manager as a sidecar; a Windows build is possible later |
-| UI | Vue 3 | I want to practice it; common at Taiwanese companies; also in demand at .NET agencies in Sydney |
+| UI | Vue 3 + TypeScript | I want to practice it; common at Taiwanese companies; also in demand at .NET agencies in Sydney. TypeScript types for the mock data act as the contract with the future C# API |
 | Background manager | C# + ASP.NET Core (Controllers) | Builds on my C# from UTS courses; lots of .NET jobs in Sydney; one framework for both the API and background services |
 | Data access | EF Core (Entity Framework Core, an ORM) | Can switch databases; also a common skill in .NET job listings |
 | Database | SQLite | A single file built into the manager; no separate server |

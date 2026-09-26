@@ -8,7 +8,10 @@ The full product rules, status flow, data structures and technical decisions liv
 ## Current status
 
 - The design phase is complete; **there is no code yet**.
-- The project folder structure has not been decided. Discuss it with Josh before creating it.
+- Folder structure (one repo for everything):
+  - `docs/`: design documents (`brief.md`)
+  - `app/`: the UI (Vue 3 + TypeScript). Mock data lives in `app/src/mock/`. Tauri will be added later as `app/src-tauri/`.
+  - `manager/`: the background manager (C#). Not created yet; Josh sets it up himself when backend work starts.
 - Next step: build a demo with Vue 3 and mock data (home page and project page). The mock data follows the "Data model" section of `docs/brief.md` and will later become the API response format.
 - The demo is finished when a task can be clicked through its whole flow, from Todo to Done. Stop there.
 
@@ -17,7 +20,7 @@ The full product rules, status flow, data structures and technical decisions liv
 | Layer | Choice |
 | --- | --- |
 | Desktop shell | Tauri (Mac build only for now) |
-| UI | Vue 3 |
+| UI | Vue 3 + TypeScript |
 | Background manager | C# + ASP.NET Core (Controllers) |
 | Data access | EF Core (Entity Framework Core) |
 | Database | SQLite |
