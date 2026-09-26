@@ -27,49 +27,100 @@ I finalize everything. Agents produce first drafts and do the work, and hand thi
 1. The home page shows the five most recent projects. Each shows only its description and its current phase and task (the first unfinished card in planned order).
 2. Opening a project shows all of its pending items, sorted by time. There is no priority ordering.
 3. I **manage** one project at a time, but agents from several projects can **run** in the background at the same time.
+4. A card that has an agent running on it shows a small animation or indicator light, so I can tell at a glance whether the agent is working or the card is waiting on me.
 
 ### Flow and roles
 
-4. The planning agent discusses direction with me → I approve → it produces a brief or agents.md.
-5. The design agent builds a demo → I approve → it's finalized and handed to the coding agent.
-6. AI writes the first draft of the test cases → I review, add and remove → they're finalized and locked. The coding agent can read them but not change them; I can always change them.
-7. When coding fails a set number of times in a row, it stops. The agent attaches its assessment without categorizing it; the final call is always mine.
-8. When opening a card, list its prerequisite cards (there can be several). Until they're done, the card can't start and its tests can't be written. Cards with no dependency between them can run in parallel.
-9. QA (Quality Assurance) E2E (End-to-End) tests run at the end of each phase, not once per card.
-10. QA finds a bug → the agent traces its source and opens a new **debug card** with draft test cases attached, which then follows the normal flow.
+5. The planning agent discusses direction with me in chat → I approve → it produces a brief or agents.md. Planning work does **not** get cards.
+   - The **IT supervisor agent** is for mid-project trouble: when a bug or a hard problem comes up, I talk it through with it in chat and it works out how to handle it (for example, a replacement card). It only **proposes**: nothing changes until I approve, just like planning. Like planning, this happens in chat and doesn't get cards. It also handles QA's Analysing step and can be called in from Needs decision.
+6. Cards are units of work for agents. There are four card types: **Design**, **Build**, **Debug** and **QA** (Quality Assurance). I can open Design, Build and Debug cards myself; QA cards are never opened by hand (see below).
+7. A Design card has the design agent build a demo; I decide whether to adopt it. Adopting it opens the Build cards that implement it, with the Design card as their prerequisite.
+8. Test cases for Build, Debug and QA cards: AI writes a first draft in plain language → I review, add and remove → they're locked. A separate **test agent** then turns them into test code → I review → it's locked. The coding agent can read both but change neither; I can always change them.
+9. When coding fails a set number of times in a row, it stops. The agent attaches its assessment without categorizing it; the final call is always mine.
+10. When opening a card, list its prerequisite cards (there can be several). Until they're done or cancelled, the card can't start and its tests can't be written. Cards with no dependency between them can run in parallel.
+11. QA E2E (End-to-End) tests run at the end of each phase, not once per card. Each phase has exactly **one** QA card, created by the planning agent as part of the plan.
+12. Whether QA passes or fails, I make the call. Choosing Fix has the IT supervisor agent trace the problem and propose **Debug cards** (with draft test cases attached), which follow exactly the same flow as Build cards.
 
 ### Schedule
 
-11. The planning agent estimates each card's planned start time and estimated hours, and I approve them together with the rest of the plan.
-12. Estimated hours **include time spent waiting on me**, because that's a cost too.
-13. The baseline is saved once at approval and never changes. Cards added later (including debug cards) are marked "unplanned".
+13. The planning agent estimates each card's planned start time and estimated hours, and I approve them together with the rest of the plan.
+14. Estimated hours **include time spent waiting on me**, because that's a cost too.
+15. The baseline is saved once at approval and never changes. Cards added later (including Debug cards) are marked "unplanned".
 
 ### Background execution
 
-14. Closing the window leaves the agents running. Closing the laptop lid pauses them; when it's reopened they resume **automatically** from the latest git commit checkpoint and leave an entry on the card.
+16. Closing the window leaves the agents running. Closing the laptop lid pauses them; when it's reopened they resume **automatically** from the latest git commit checkpoint and leave an entry on the card.
 
-## Card status flow
+## Card status flows
 
-A card passes through three points where it stops and waits for me on its way from Todo to Done. The "pending list" is simply every card sitting in one of those statuses; it isn't stored separately.
+Status names describe the **stage** a card is in, not whose turn it is. Some stages start with an agent working and end with the card waiting on me (slanted boxes below).
+
+**Whose turn it is is derived, not stored**: if no agent is running on the card and it's not in a status that waits on other cards (Todo, Waiting for dev) or a finished status (Done, Cancelled, Adopted, Rejected), it's waiting on me. The "pending list" is simply every card in that situation.
+
+Resuming automatically after a disconnect is **not** a status; it only leaves an entry in the status history.
+
+### Build and Debug cards
 
 ```mermaid
 flowchart LR
-    todo[Todo] --> write[Writing tests] --> review[/Awaiting test review/] --> working[Working] --> testing[Testing]
+    todo[Todo] --> tc[/Test cases/] --> wt[/Writing tests/] --> working[Working] --> testing[Testing]
     testing -- fail --> debugging[Debugging]
     debugging -- retry --> testing
     debugging -- limit reached --> decision[/Needs decision/]
+    decision -- edit test cases --> tc
+    decision -- edit test code --> wt
+    decision -- retry with note --> working
+    decision -- run tests --> testing
     testing -- pass --> confirm[/Awaiting confirmation/] --> done[Done]
 ```
 
-(Slanted boxes = statuses that stop and wait for me)
+- **Test cases**: AI drafts the plain-language test cases, then I review and lock them.
+- **Writing tests**: the test agent writes the test code, then I review and lock it.
+- **Debugging**: the coding agent retries and fixes things on its own without bothering me.
+- **Needs decision**: it failed up to the limit in a row; the agent attaches its assessment and stops. I choose one of:
+  - **Edit test cases** → Test cases: the acceptance criteria themselves are wrong.
+  - **Edit test code** → Writing tests: the criteria are fine, but the test agent translated them into code wrongly.
+  - **Retry with note** → Working: the agent is stuck going the wrong way; I tell it what to try.
+  - **Run tests** → Testing: I fixed the code myself. If the tests still fail, the normal flow continues into Debugging, and the agent may change the code I edited (it still can't touch the tests).
+  - **Ask IT supervisor**: talk it through in chat; it proposes one of the choices above (or new cards), and nothing happens until I approve.
+  - **Cancel card** (see below).
+- The consecutive-failure count **resets to zero** after any of these decisions.
+- **Cancelled**: I can cancel a Build or Debug card at any point before it's Done. Any agent running on it stops immediately. Cancelled is an end state, and it **counts as finished** for dependencies and for QA's Waiting for dev: cards that depended on it simply go ahead. If one of them then fails because the cancelled work is missing, I (or the IT supervisor agent) open a new card to replace it.
+- Design cards can't be cancelled (Rejected covers that), and neither can QA cards (a phase can't end without its one QA card).
 
-- **Debugging**: the agent retries and fixes things on its own without bothering me.
-- **Needs decision**: it failed up to the limit in a row; the agent attaches its assessment and stops.
-- Resuming automatically after a disconnect is **not** a status; it only leaves an entry in the status history.
+### Design cards
 
-### QA at the end of a phase
+```mermaid
+flowchart LR
+    todo[Todo] --> demo[/Demo/]
+    demo -- adopt --> adopted[Adopted]
+    demo -- reject --> rejected[Rejected]
+    demo -- request changes --> demo
+```
 
-Once every card in a phase is done, the QA agent runs the E2E tests. If they fail, the agent traces the source and opens a new debug card (marked unplanned, with draft test cases), which goes through the same flow as above. QA reruns after the debug card is done. The original card's record stays unchanged.
+- **Demo**: the design agent builds the demo, then I choose adopt, reject or request changes.
+- Adopted and Rejected are separate end states, because a rejected design is still a meaningful outcome when looking back at the schedule.
+
+### QA cards
+
+```mermaid
+flowchart LR
+    todo[Todo] --> tc[/Test cases/] --> wt[/Writing tests/] --> wait[Waiting for dev] --> running[/Running/]
+    running -- Done --> done[Done]
+    running -- Fix --> analysing[/Analysing/]
+    analysing -- Debug cards opened --> wait
+    running -- edit test cases --> tc
+```
+
+- **Todo → Test cases** happens automatically when the phase starts, so the E2E test cases are written and reviewed while Build cards are still in progress.
+- **Waiting for dev**: once the tests are locked, the QA card waits here as long as any other card in the phase (Design, Build or Debug) hasn't finished. Cancelled, Adopted and Rejected count as finished. When the last one finishes, the QA card moves to Running automatically.
+- **Running**: the QA agent runs the E2E tests. Whether they all pass or not, it stops and I choose:
+  - All passed: **Done** (the phase ends and the next phase begins) or **edit test cases**.
+  - Something failed: **Fix** or **edit test cases**.
+  - I can also choose Fix when everything passed, e.g. when I found a problem by hand. Fix takes an optional note describing what I saw.
+- **Analysing**: the IT supervisor agent traces the problem and proposes Debug cards. Once I approve them they're opened, which sends the QA card back to Waiting for dev. If it finds no cause and proposes **no** cards, it stops and shows me its analysis instead of rerunning the same failing tests.
+- Because every loop goes through me, QA can't retry forever on its own and needs no failure limit.
+- The original cards' records stay unchanged.
 
 ## Data model
 
@@ -88,7 +139,7 @@ Layer by layer: Project → Phase → Card → Test case / Status history, each 
 | Field | Source |
 | --- | --- |
 | Name, order | Planned by the planning agent, approved by me |
-| Is done | Not stored; true when every card under it is done |
+| Is done | Not stored; true when the phase's QA card is Done |
 
 ### Card (Task)
 
@@ -100,10 +151,12 @@ Layer by layer: Project → Phase → Card → Test case / Status history, each 
 | Planned start, estimated hours | Estimated by the planning agent, approved by me (including time waiting on me) |
 | Current status | Updated by the system as the flow progresses |
 | Is unplanned | Set automatically on cards added after approval |
-| Card type | Regular card or debug card |
+| Card type | Design, Build, Debug or QA |
 | Source card | Debug cards only; points to the card where the problem was found |
 | Progress | Not stored; derived from passing tests (e.g. 3/5) |
-| Actual start, actual end | Not stored; taken from the first Working and Done entries in the status history |
+| Actual start, actual end | Not stored; taken from the status history (first move out of Todo, and reaching an end state) |
+| Agent running | Not stored; reported live by the background manager |
+| Waiting on me | Not stored; derived from status and whether an agent is running (see "Card status flows") |
 
 ### Test case
 
@@ -115,7 +168,11 @@ Layer by layer: Project → Phase → Card → Test case / Status history, each 
 
 ### Status history
 
-One entry per status change: card, from status, to status, time. Interruptions and resumes are recorded here too. Used to derive actual time and total time spent waiting on me, and later to feed back to the planning agent to calibrate its estimates.
+One entry per status change: card, from status, to status, time. Interruptions and resumes are recorded here too. Used to derive actual time, and later to feed back to the planning agent to calibrate its estimates.
+
+### Agent runs
+
+One entry each time an agent starts or stops working on a card: card, agent, start time, end time. Because status names no longer say whose turn it is, this is what lets the system derive total time spent waiting on me.
 
 ### Card dependency table
 
@@ -142,13 +199,17 @@ The UI and the background manager are two separate programs that talk through a 
 ### Decided
 
 - The whole system uses English: UI text, code, database values and documentation.
+- Planning, design and QA roles: planning happens in chat with no cards; design and QA get their own card types and flows (see "Card status flows").
 
 ### Still open
 
 - Whether "Needs decision" and the other status names above are final.
+- The Debug card type and the Debugging status share a name ("a Debug card in Debugging"); one of them should be renamed.
+- Whether a card should be called Card or Task in code (`Task` clashes with C#'s built-in `System.Threading.Tasks.Task`).
+- Who drafts the Build cards when a Design card is adopted (the planning agent, the design agent, or me).
+- Whether new Build or Debug cards can be opened in a phase whose QA is already Done, or only in the current phase.
 - The limit on consecutive failures.
 - What I can do with a card stuck in Needs decision (edit tests, send it back to Working, cancel the card?).
-- Whether the planning and design roles' work should also appear as cards on the board.
 - Whether to show a macOS notification when a card enters a status that waits on me.
 - Details of the Gantt chart view.
 
