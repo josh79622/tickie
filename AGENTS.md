@@ -1,6 +1,6 @@
 # Tickie
 
-A fully local Mac desktop app for opening tickets and dispatching work to AI coding agents on your machine from a PM's (Project Manager's) point of view, with every card gated by locked test cases.
+A fully local Mac desktop app for opening tickets and dispatching work to AI coding agents on your machine from a PM's (Project Manager's) point of view, with every task gated by locked test cases.
 Where the name comes from: a ticket is only done once every item on its acceptance checklist has been ticked.
 
 The full product rules, status flow, data structures and technical decisions live in **`docs/brief.md`**. Read the relevant sections before making changes.
@@ -10,7 +10,7 @@ The full product rules, status flow, data structures and technical decisions liv
 - The design phase is complete; **there is no code yet**.
 - The project folder structure has not been decided. Discuss it with Josh before creating it.
 - Next step: build a demo with Vue 3 and mock data (home page and project page). The mock data follows the "Data model" section of `docs/brief.md` and will later become the API response format.
-- The demo is finished when a card can be clicked through its whole flow, from Todo to Done. Stop there.
+- The demo is finished when a task can be clicked through its whole flow, from Todo to Done. Stop there.
 
 ## Tech stack
 
@@ -43,4 +43,4 @@ This is Josh's learning project and job-hunting portfolio piece. He needs to be 
 - A few core principles that are easy to miss:
   - Data that can be derived from system behavior (progress, actual start/end times, current task) is never entered by hand and never stored separately.
   - Test cases are locked once finalized; the coding agent cannot change them.
-  - The baseline never changes once approved; cards added afterward are marked "unplanned".
+  - The baseline never changes once approved; tasks added afterward are marked "unplanned".
