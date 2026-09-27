@@ -24,7 +24,7 @@ I finalize everything. Agents produce first drafts and do the work, and hand thi
 
 ### Screens
 
-1. The home page shows the five most recent projects. Each shows only its description and its current phase and task (the first unfinished task in planned order).
+1. The home page shows the five most recent projects (most recent = latest status history entry, derived, not stored). Each shows only its description and its current phase and task (the first unfinished task in planned order).
 2. Opening a project shows all of its pending items, sorted by time. There is no priority ordering.
 3. I **manage** one project at a time, but agents from several projects can **run** in the background at the same time.
 4. A task that has an agent running on it shows a small animation or indicator light, so I can tell at a glance whether the agent is working or the task is waiting on me.
@@ -146,7 +146,7 @@ Layer by layer: Project → Phase → Task → Test case / Status history, each 
 | Field | Source |
 | --- | --- |
 | Title, tagline | Planning agent or me |
-| Assigned agent | Set when the task is opened |
+| Assigned agent | The AI tool that does the work (e.g. Claude Code, Codex); set when the task is opened |
 | Phase, order | Planned by the planning agent, approved by me |
 | Planned start, estimated hours | Estimated by the planning agent, approved by me (including time waiting on me) |
 | Current status | Updated by the system as the flow progresses |
@@ -168,7 +168,7 @@ Layer by layer: Project → Phase → Task → Test case / Status history, each 
 
 ### Status history
 
-One entry per status change: task, from status, to status, time, and an optional note. Interruptions and resumes are recorded here too (the note says what happened, e.g. which commit it resumed from), and so are my notes on Retry with note and Fix. Used to derive actual time, and later to feed back to the planning agent to calibrate its estimates.
+One entry per status change: task, from status, to status, time, and an optional note. Interruptions and resumes are recorded here too, as an entry whose from and to status are the same (e.g. Working → Working) with a note saying what happened, such as which commit it resumed from. Design's request changes is recorded the same way (Demo → Demo), and so are my notes on Retry with note and Fix. Used to derive actual time, and later to feed back to the planning agent to calibrate its estimates.
 
 ### Agent runs
 
