@@ -12,6 +12,12 @@
   --color-accent: #2563eb;
   --color-danger: #dc2626;
   --color-danger-bg: #fee2e2;
+  --color-active-bg: #eff6ff;
+  --color-active-text: #1e40af;
+  /* Saturation and lightness for status badges; the hue comes from each status */
+  --status-bg: 85% 94%;
+  --status-border: 60% 80%;
+  --status-text: 70% 30%;
 }
 
 /* Light is the default; dark only when chosen with the theme toggle */
@@ -29,6 +35,11 @@
   --color-accent: #3b82f6;
   --color-danger: #f87171;
   --color-danger-bg: rgba(248, 113, 113, 0.15);
+  --color-active-bg: rgba(59, 130, 246, 0.12);
+  --color-active-text: #93c5fd;
+  --status-bg: 45% 18%;
+  --status-border: 45% 32%;
+  --status-text: 80% 75%;
 }
 
 *,

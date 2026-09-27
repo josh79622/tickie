@@ -7,7 +7,8 @@ The full product rules, status flow, data structures and technical decisions liv
 
 ## Current status
 
-- The design phase is complete. The **home page is done and approved** (Vue 3 demo with mock data); the **project page** is next and is currently an empty placeholder.
+- The design phase is complete. The **home page** and **project page** demos are built (Vue 3 with mock data): phases with their tasks, a task detail side panel, opening tasks by hand, and a floating chat with the planning agent / IT supervisor (demo replies only).
+- Not built yet: buttons that move a task through its status flow (the demo's finish line, see below). Visual polish is deliberately left for real frontend work; the focus is moving to the C# manager.
 - Folder structure (one repo for everything):
   - `docs/`: design documents (`brief.md`)
   - `app/`: the UI (Vue 3 + TypeScript). Tauri will be added later as `app/src-tauri/`.
@@ -15,7 +16,7 @@ The full product rules, status flow, data structures and technical decisions liv
 - Where things live in `app/src/`:
   - `types/models.ts`: TypeScript types mirroring the brief's "Data model"; the contract with the future C# API.
   - `mock/data.ts`: mock data in that shape (5 projects; "Tickie" covers most task types and statuses), plus a pretend folder list for the folder picker.
-  - `lib/derive.ts`: pure functions for every derived value (current task, waiting on me, agent running, progress).
+  - `lib/derive.ts`: pure functions for every derived value (current phase and task, waiting on me, agent running, progress, actual times).
   - `stores/tickie.ts`: the Pinia store all screens share.
   - `components/FolderPicker.vue`: a pretend Finder, to be replaced by Tauri's native folder dialog.
 - Mock data resets on every page reload; nothing persists until the C# manager and SQLite exist.

@@ -19,3 +19,24 @@ export const statusLabel: Record<TaskStatus, string> = {
   Running: 'Running',
   Analysing: 'Analysing',
 }
+
+// Each status gets its own hue for its badge; null means a neutral grey.
+export const statusHue: Record<TaskStatus, number | null> = {
+  Todo: null,
+  TestCases: 200,
+  WritingTests: 225,
+  Working: 255,
+  Testing: 180,
+  Fixing: 25,
+  NeedsDecision: 0,
+  AwaitingConfirmation: 45,
+  Done: 140,
+  Cancelled: null,
+  Demo: 285,
+  Adopted: 140,
+  Rejected: 340,
+  WaitingForDev: 210,
+  Running: 165,
+  Analysing: 310,
+}
+

@@ -115,3 +115,23 @@ export interface TaskDependency {
   taskId: Id
   prerequisiteTaskId: Id
 }
+
+export type ChatAgent = 'Planning' | 'ITSupervisor'
+
+// One conversation with the planning agent or the IT supervisor agent.
+// Only the current session is sent to the agent; older ones stay readable.
+export interface ChatSession {
+  id: Id
+  projectId: Id
+  agent: ChatAgent
+  startedAt: IsoDateTime
+}
+
+export interface ChatMessage {
+  id: Id
+  sessionId: Id
+  // true when I sent it, false when the agent did
+  fromMe: boolean
+  text: string
+  at: IsoDateTime
+}

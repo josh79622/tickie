@@ -24,13 +24,19 @@ I finalize everything. Agents produce first drafts and do the work, and hand thi
 
 ### Screens
 
-1. The home page shows **all** projects, in my own order (drag to reorder). Each shows only its description and its current phase and task (the first unfinished task in planned order).
+1. The home page shows **all** projects, in my own order (drag to reorder). Each shows only its description and its current phase and task.
+   - **Current phase** shows how far the project has got: the last phase in which any task has moved past Todo, or the next phase once that one's QA is Done. Reopening an earlier phase (adding a task after its QA was Done) does not move it back.
+   - **Current task** is the first unfinished task of the current phase in time order (earliest planned start, ties broken by task order). If the current phase has nothing unfinished, it falls back to the earliest unfinished task in any phase.
    - **+** adds a project in one of two ways; new projects go to the top:
      - **Open existing folder**: pick a folder already on my Mac. If it belonged to a removed project, that project comes back instead.
      - **New empty folder**: enter a name and description, and pick where the folder goes each time; Tickie creates the folder.
    - Folders are always picked with a folder dialog, never by typing a path.
    - **×** removes a project from the home page after a confirmation. It's a soft removal: nothing under it is deleted. Adding its folder again brings it back with all its phases, tasks and history.
-2. Opening a project shows all of its pending items, sorted by time. There is no priority ordering.
+2. Opening a project shows its phases in order, numbered (Phase 1, 2, 3…), with the current phase marked. There is no priority ordering.
+   - Under each phase are its tasks in time order (earliest planned start first). Each shows an icon for its type (Build, Debug, Design, QA) and a colored status.
+   - Tasks in progress (past Todo but not finished) are highlighted. Finished tasks (Done, Cancelled, Adopted, Rejected) are folded away under each phase, and a phase whose tasks are all still Todo is folded too, except the current phase.
+   - Every phase, including a finished one, has a **+** to open a task by hand (Build, Design or Debug; see rule 6).
+   - A floating chat button in the corner opens a chat with the planning agent or the IT supervisor agent (see rule 5 and "Chat session").
 3. I **manage** one project at a time, but agents from several projects can **run** in the background at the same time.
 4. A task that has an agent running on it shows a small animation or indicator light, so I can tell at a glance whether the agent is working or the task is waiting on me.
 
@@ -115,6 +121,7 @@ flowchart LR
     running -- Fix --> analysing[/Analysing/]
     analysing -- Debug tasks opened --> wait
     running -- edit test cases --> tc
+    done -- task added to the phase --> wait
 ```
 
 - **Todo → Test cases** happens automatically when the phase starts, so the E2E test cases are written and reviewed while Build tasks are still in progress.
@@ -124,12 +131,13 @@ flowchart LR
   - Something failed: **Fix** or **edit test cases**.
   - I can also choose Fix when everything passed, e.g. when I found a problem by hand. Fix takes an optional note describing what I saw.
 - **Analysing**: the IT supervisor agent traces the problem and proposes Debug tasks. Once I approve them they're opened, which sends the QA task back to Waiting for dev. If it finds no cause and proposes **no** tasks, it stops and shows me its analysis instead of rerunning the same failing tests.
+- **Done → Waiting for dev**: opening any new task in a phase whose QA is Done (a bug or small feature found later) sends the QA task back to Waiting for dev automatically, so the phase is no longer done until the E2E tests pass again. The status history entry notes which task was added.
 - Because every loop goes through me, QA can't retry forever on its own and needs no failure limit.
 - The original tasks' records stay unchanged.
 
 ## Data model
 
-Layer by layer: Project → Phase → Task → Test case / Status history, each one-to-many. Prerequisites between tasks are many-to-many and get their own dependency table. Principle: **anything that can be derived from system behavior is never entered by hand and never stored separately.**
+Layer by layer: Project → Phase → Task → Test case / Status history, each one-to-many; separately, Project → Chat session → Chat message. Prerequisites between tasks are many-to-many and get their own dependency table. Principle: **anything that can be derived from system behavior is never entered by hand and never stored separately.**
 
 ### Project
 
@@ -182,6 +190,14 @@ One entry per status change: task, from status, to status, time, and an optional
 
 One entry each time an agent starts or stops working on a task: task, agent, start time, end time. Because status names no longer say whose turn it is, this is what lets the system derive total time spent waiting on me.
 
+### Chat session
+
+One entry per conversation: project, agent (Planning or IT supervisor), start time. I start a new session by hand; older sessions stay readable but aren't sent to the agent.
+
+### Chat message
+
+One entry per message: session, whether I or the agent sent it, text, time.
+
 ### Task dependency table
 
 One row per relationship: task ← prerequisite task. The system checks this when a task is opened and doesn't allow circular dependencies (A waits on B, B waits on A).
@@ -210,6 +226,8 @@ The UI and the background manager are two separate programs that talk through a 
 - A unit of work is called a **Task** (not a card).
 - The status where the coding agent retries on its own is **Fixing** (renamed from Debugging to avoid clashing with the Debug task type).
 - The consecutive-failure limit is **3**.
+- New tasks can be opened in any phase, including one whose QA is already Done: bugs or small features are often found after a phase ends. Doing so sends that phase's QA back to Waiting for dev.
+- Chat with the planning agent and the IT supervisor agent is split into **sessions**. Every message is stored and can be read back, but an agent only receives the current session plus the project's current state (brief, agents.md, tasks and statuses), never older sessions. This keeps token use flat; anything worth keeping must be approved into the brief or the tasks anyway.
 - Planning, design and QA roles: planning happens in chat with no tasks; design and QA get their own task types and flows (see "Task status flows").
 
 ### Still open
@@ -218,7 +236,6 @@ The UI and the background manager are two separate programs that talk through a 
 - Whether "Needs decision" and the other status names above are final.
 - What to name the Task class in C# code: `Task` clashes with C#'s built-in `System.Threading.Tasks.Task` (decide when writing the backend).
 - Who drafts the Build tasks when a Design task is adopted (the planning agent, the design agent, or me).
-- Whether new Build or Debug tasks can be opened in a phase whose QA is already Done, or only in the current phase.
 - Whether to show a macOS notification when a task enters a status that waits on me.
 - Details of the Gantt chart view.
 
