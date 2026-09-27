@@ -7,7 +7,7 @@ The full product rules, status flow, data structures and technical decisions liv
 
 ## Current status
 
-- The design phase is complete; **there is no code yet**.
+- The design phase is complete. `app/` has been scaffolded and the TypeScript types for the data model are in `app/src/types/models.ts`; no screens yet.
 - Folder structure (one repo for everything):
   - `docs/`: design documents (`brief.md`)
   - `app/`: the UI (Vue 3 + TypeScript). Mock data lives in `app/src/mock/`. Tauri will be added later as `app/src-tauri/`.

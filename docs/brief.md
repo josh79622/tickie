@@ -168,7 +168,7 @@ Layer by layer: Project → Phase → Task → Test case / Status history, each 
 
 ### Status history
 
-One entry per status change: task, from status, to status, time. Interruptions and resumes are recorded here too. Used to derive actual time, and later to feed back to the planning agent to calibrate its estimates.
+One entry per status change: task, from status, to status, time, and an optional note. Interruptions and resumes are recorded here too (the note says what happened, e.g. which commit it resumed from), and so are my notes on Retry with note and Fix. Used to derive actual time, and later to feed back to the planning agent to calibrate its estimates.
 
 ### Agent runs
 
