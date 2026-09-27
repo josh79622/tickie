@@ -241,6 +241,6 @@ The UI and the background manager are two separate programs that talk through a 
 
 ### Next steps
 
-- [ ] Build a demo with Vue 3 and mock data, starting with the home page and the project page. The mock data follows the "Data model" section and will later become the API response format.
-- [ ] The demo is finished when a task can be clicked through its whole flow from Todo to Done. Stop there instead of polishing the screens.
+- [x] Build a demo with Vue 3 and mock data, starting with the home page and the project page. The mock data follows the "Data model" section and will later become the API response format.
+- [x] The demo is finished when a task can be clicked through its whole flow from Todo to Done. Stop there instead of polishing the screens.
 - [ ] Start writing the C# manager by hand, step by step, and connect it to real agents.

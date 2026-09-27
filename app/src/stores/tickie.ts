@@ -10,6 +10,7 @@ import type {
   IsoDateTime,
   QaTask,
   Task,
+  TaskStatus,
 } from '@/types/models'
 
 // One shared whiteboard for every screen. Later the refs get filled from the C# API instead of mock data.
@@ -203,6 +204,63 @@ export const useTickieStore = defineStore('tickie', () => {
     renumber(ids)
   }
 
+  // Statuses where an agent is doing the work, so an agent run is open. A demo simplification:
+  // the agent part of Test cases and Writing tests is skipped and they go straight to my review.
+  const agentStatuses: TaskStatus[] = ['Working', 'Testing', 'Fixing']
+
+  // Moves a task to a new status: records the change and opens or closes the agent run to match
+  const moveTask = (taskId: Id, to: TaskStatus, note: string | null = null) => {
+    const task = tasks.value.find((t) => t.id === taskId)
+    if (!task) return
+    const now = new Date().toISOString()
+    statusHistory.value.push({
+      id: Math.max(0, ...statusHistory.value.map((entry) => entry.id)) + 1,
+      taskId,
+      fromStatus: task.status,
+      toStatus: to,
+      at: now,
+      note,
+    })
+    // The status union differs per task type; the caller only offers moves valid for this type
+    ;(task as { status: TaskStatus }).status = to
+
+    const openRun = agentRuns.value.find((run) => run.taskId === taskId && run.endedAt === null)
+    if (agentStatuses.includes(to) && !openRun) {
+      agentRuns.value.push({
+        id: Math.max(0, ...agentRuns.value.map((run) => run.id)) + 1,
+        taskId,
+        agent: task.assignedAgent,
+        startedAt: now,
+        endedAt: null,
+      })
+    } else if (!agentStatuses.includes(to) && openRun) {
+      openRun.endedAt = now
+    }
+  }
+
+  // Stands in for the AI's first draft of plain-language test cases
+  const draftTestCases = (taskId: Id) => {
+    if (testCases.value.some((testCase) => testCase.taskId === taskId)) return
+    const next = Math.max(0, ...testCases.value.map((testCase) => testCase.id)) + 1
+    testCases.value.push(
+      { id: next, taskId, content: 'Draft test case 1 (demo)', isLocked: false, passedOnLastRun: null },
+      { id: next + 1, taskId, content: 'Draft test case 2 (demo)', isLocked: false, passedOnLastRun: null },
+    )
+  }
+
+  const lockTestCases = (taskId: Id) => {
+    testCases.value
+      .filter((testCase) => testCase.taskId === taskId)
+      .forEach((testCase) => (testCase.isLocked = true))
+  }
+
+  // Demo test run: all pass, or the first one fails
+  const recordTestRun = (taskId: Id, allPass: boolean) => {
+    testCases.value
+      .filter((testCase) => testCase.taskId === taskId)
+      .forEach((testCase, index) => (testCase.passedOnLastRun = allPass || index > 0))
+  }
+
   // Only hides the project from the home page; its phases, tasks and history stay
   const removeProject = (id: Id) => {
     const project = projects.value.find((p) => p.id === id)
@@ -235,5 +293,9 @@ export const useTickieStore = defineStore('tickie', () => {
     createFolder,
     moveProject,
     removeProject,
+    moveTask,
+    draftTestCases,
+    lockTestCases,
+    recordTestRun,
   }
 })

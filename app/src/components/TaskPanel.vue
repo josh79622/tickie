@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import type { Task } from '@/types/models'
-import { actualTimes } from '@/lib/derive'
+import { actualTimes, consecutiveFailures, failureLimit, isFinished } from '@/lib/derive'
 import { formatDateTime } from '@/lib/format'
 import { statusLabel } from '@/lib/labels'
 import { useTickieStore } from '@/stores/tickie'
@@ -35,8 +35,105 @@ const testCases = computed(() => store.testCases.filter((testCase) => testCase.t
 const history = computed(() =>
   store.statusHistory
     .filter((entry) => entry.taskId === props.task.id)
-    .sort((a, b) => b.at.localeCompare(a.at)),
+    .sort((a, b) => b.at.localeCompare(a.at) || b.id - a.id),
 )
+
+// Status buttons, Build and Debug only (the demo's finish line). Agent steps are simulated.
+interface Action {
+  label: string
+  run: () => void
+  byAgent?: boolean
+  danger?: boolean
+}
+
+const prerequisitesFinished = computed(() => prerequisites.value.every((t) => isFinished(t)))
+const failures = computed(() => consecutiveFailures(props.task, store.statusHistory))
+
+const actions = computed((): Action[] => {
+  const task = props.task
+  if (task.type !== 'Build' && task.type !== 'Debug') return []
+  const id = task.id
+  const move = store.moveTask
+  const list: Action[] = []
+  switch (task.status) {
+    case 'Todo':
+      if (prerequisitesFinished.value)
+        list.push({
+          label: 'Start: draft test cases',
+          run: () => {
+            store.draftTestCases(id)
+            move(id, 'TestCases')
+          },
+        })
+      break
+    case 'TestCases':
+      list.push({
+        label: 'Lock test cases',
+        run: () => {
+          store.lockTestCases(id)
+          move(id, 'WritingTests')
+        },
+      })
+      break
+    case 'WritingTests':
+      list.push({ label: 'Lock test code', run: () => move(id, 'Working') })
+      break
+    case 'Working':
+      list.push({ label: 'Code written, run tests', byAgent: true, run: () => move(id, 'Testing') })
+      break
+    case 'Testing':
+      list.push(
+        {
+          label: 'Tests pass',
+          byAgent: true,
+          run: () => {
+            store.recordTestRun(id, true)
+            move(id, 'AwaitingConfirmation')
+          },
+        },
+        {
+          label: 'Tests fail',
+          byAgent: true,
+          run: () => {
+            store.recordTestRun(id, false)
+            move(id, 'Fixing')
+            if (consecutiveFailures(task, store.statusHistory) >= failureLimit)
+              move(id, 'NeedsDecision', `Failed ${failureLimit} times in a row`)
+          },
+        },
+      )
+      break
+    case 'Fixing':
+      list.push({ label: 'Fix tried, run tests again', byAgent: true, run: () => move(id, 'Testing') })
+      break
+    case 'NeedsDecision':
+      list.push(
+        { label: 'Edit test cases', run: () => move(id, 'TestCases') },
+        { label: 'Edit test code', run: () => move(id, 'WritingTests') },
+        {
+          label: 'Retry with note',
+          run: () => {
+            const note = window.prompt('What should the agent try?')
+            if (note?.trim()) move(id, 'Working', note.trim())
+          },
+        },
+        { label: 'Run tests (I fixed it)', run: () => move(id, 'Testing') },
+      )
+      break
+    case 'AwaitingConfirmation':
+      list.push({ label: 'Confirm done', run: () => move(id, 'Done') })
+      break
+  }
+  if (!isFinished(task))
+    list.push({
+      label: 'Cancel task',
+      danger: true,
+      run: () => {
+        if (window.confirm(`Cancel "${task.title}"? Any agent on it stops.`)) move(id, 'Cancelled')
+      },
+    })
+  return list
+})
 
 const resultLabel = (passed: boolean | null) =>
   passed === null ? 'Not run' : passed ? 'Passed' : 'Failed'
@@ -61,6 +158,30 @@ const resultLabel = (passed: boolean | null) =>
       <span class="status">{{ statusLabel[task.status] }}</span>
       <TurnIndicator :task="task" />
     </div>
+
+    <section v-if="actions.length || (task.status === 'Todo' && !prerequisitesFinished)">
+      <h3>
+        Actions
+        <span v-if="failures > 0 && !isFinished(task)" class="muted count">
+          · {{ failures }}/{{ failureLimit }} failures in a row
+        </span>
+      </h3>
+      <p v-if="task.status === 'Todo' && !prerequisitesFinished" class="muted">
+        Can't start until every prerequisite is finished.
+      </p>
+      <div class="actions-list">
+        <button
+          v-for="action in actions"
+          :key="action.label"
+          type="button"
+          :class="{ agent: action.byAgent, danger: action.danger }"
+          @click="action.run"
+        >
+          <span v-if="action.byAgent" class="sim">Simulate agent</span>
+          {{ action.label }}
+        </button>
+      </div>
+    </section>
 
     <dl class="facts">
       <dt>Phase</dt>
@@ -217,6 +338,51 @@ h3 {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   font-size: 0.8rem;
+}
+
+.count {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.actions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.actions-list button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 6px;
+  background: var(--color-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Simulated agent steps look different so they're not mistaken for my own decisions */
+.actions-list button.agent {
+  border-style: dashed;
+  background: var(--color-background);
+  color: var(--color-accent);
+}
+
+.actions-list button.danger {
+  border-color: var(--color-danger);
+  background: var(--color-background);
+  color: var(--color-danger);
+}
+
+.sim {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.8;
 }
 
 .facts {

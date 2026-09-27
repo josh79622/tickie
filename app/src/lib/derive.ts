@@ -90,3 +90,17 @@ export const actualTimes = (
     end: isFinished(task) ? ([...own].reverse().find((entry) => finishedStatuses.includes(entry.toStatus))?.at ?? null) : null,
   }
 }
+
+// Coding stops and waits for my decision after this many failures in a row
+export const failureLimit = 3
+
+// Failures in a row since the last decision I made in Needs decision (every decision resets the count)
+export const consecutiveFailures = (task: Task, history: StatusHistoryEntry[]): number => {
+  const own = history.filter((entry) => entry.taskId === task.id).sort((a, b) => a.at.localeCompare(b.at) || a.id - b.id)
+  let count = 0
+  for (const entry of own) {
+    if (entry.fromStatus === 'NeedsDecision') count = 0
+    else if (entry.fromStatus === 'Testing' && entry.toStatus === 'Fixing') count++
+  }
+  return count
+}

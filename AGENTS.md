@@ -8,7 +8,8 @@ The full product rules, status flow, data structures and technical decisions liv
 ## Current status
 
 - The design phase is complete. The **home page** and **project page** demos are built (Vue 3 with mock data): phases with their tasks, a task detail side panel, opening tasks by hand, and a floating chat with the planning agent / IT supervisor (demo replies only).
-- Not built yet: buttons that move a task through its status flow (the demo's finish line, see below). Visual polish is deliberately left for real frontend work; the focus is moving to the C# manager.
+- **The demo is finished**: a Build or Debug task can be clicked from Todo to Done in its side panel, including the Needs decision branch (agent steps are simulated with dashed "Simulate agent" buttons). Design and QA have no status buttons. Visual polish is deliberately left for real frontend work.
+- Next: the C# manager (see "How we work together").
 - Folder structure (one repo for everything):
   - `docs/`: design documents (`brief.md`)
   - `app/`: the UI (Vue 3 + TypeScript). Tauri will be added later as `app/src-tauri/`.
@@ -21,7 +22,6 @@ The full product rules, status flow, data structures and technical decisions liv
   - `components/FolderPicker.vue`: a pretend Finder, to be replaced by Tauri's native folder dialog.
 - Mock data resets on every page reload; nothing persists until the C# manager and SQLite exist.
 - Run the UI with `npm --prefix app run dev` (also set up in `.claude/launch.json`). Check changes with `npm run type-check` and `npm run lint` inside `app/`.
-- The demo is finished when a task can be clicked through its whole flow, from Todo to Done. Stop there.
 
 ## Tech stack
 
