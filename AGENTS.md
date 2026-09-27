@@ -9,7 +9,12 @@ The full product rules, status flow, data structures and technical decisions liv
 
 - The design phase is complete. The **home page** and **project page** demos are built (Vue 3 with mock data): phases with their tasks, a task detail side panel, opening tasks by hand, and a floating chat with the planning agent / IT supervisor (demo replies only).
 - **The demo is finished**: a Build or Debug task can be clicked from Todo to Done in its side panel, including the Needs decision branch (agent steps are simulated with dashed "Simulate agent" buttons). Design and QA have no status buttons. Visual polish is deliberately left for real frontend work.
-- Next: the C# manager (see "How we work together").
+- Next: the C# manager (see "How we work together"). Start by having Josh pick the first EF Core entity to model and explain why.
+- Known leftovers for real frontend work (not bugs in the design):
+  - Mock task 3 ("Project page") is a Done Build task with no test cases, which the rules don't allow; add some.
+  - Long task titles wrap in narrow windows because of the wider type column.
+  - The side panel's status badge isn't colored like the list's; the panel, chat and new-task dialog were built quickly and need a design pass.
+  - Status buttons for Design and QA tasks, and QA moving from Waiting for dev to Running automatically, aren't built.
 - Folder structure (one repo for everything):
   - `docs/`: design documents (`brief.md`)
   - `app/`: the UI (Vue 3 + TypeScript). Tauri will be added later as `app/src-tauri/`.
