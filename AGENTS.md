@@ -7,12 +7,19 @@ The full product rules, status flow, data structures and technical decisions liv
 
 ## Current status
 
-- The design phase is complete. `app/` has been scaffolded and the TypeScript types for the data model are in `app/src/types/models.ts`; no screens yet.
+- The design phase is complete. The **home page is done and approved** (Vue 3 demo with mock data); the **project page** is next and is currently an empty placeholder.
 - Folder structure (one repo for everything):
   - `docs/`: design documents (`brief.md`)
-  - `app/`: the UI (Vue 3 + TypeScript). Mock data lives in `app/src/mock/`. Tauri will be added later as `app/src-tauri/`.
+  - `app/`: the UI (Vue 3 + TypeScript). Tauri will be added later as `app/src-tauri/`.
   - `manager/`: the background manager (C#). Not created yet; Josh sets it up himself when backend work starts.
-- Next step: build a demo with Vue 3 and mock data (home page and project page). The mock data follows the "Data model" section of `docs/brief.md` and will later become the API response format.
+- Where things live in `app/src/`:
+  - `types/models.ts`: TypeScript types mirroring the brief's "Data model"; the contract with the future C# API.
+  - `mock/data.ts`: mock data in that shape (5 projects; "Tickie" covers most task types and statuses), plus a pretend folder list for the folder picker.
+  - `lib/derive.ts`: pure functions for every derived value (current task, waiting on me, agent running, progress).
+  - `stores/tickie.ts`: the Pinia store all screens share.
+  - `components/FolderPicker.vue`: a pretend Finder, to be replaced by Tauri's native folder dialog.
+- Mock data resets on every page reload; nothing persists until the C# manager and SQLite exist.
+- Run the UI with `npm --prefix app run dev` (also set up in `.claude/launch.json`). Check changes with `npm run type-check` and `npm run lint` inside `app/`.
 - The demo is finished when a task can be clicked through its whole flow, from Todo to Done. Stop there.
 
 ## Tech stack
@@ -39,6 +46,7 @@ This is Josh's learning project and job-hunting portfolio piece. He needs to be 
 - Use everyday analogies instead of jargon.
 - Be direct and honest; no reassurance. Point out problems when you see them.
 - Replies may be in Traditional Chinese; keep technical terms in English.
+- Ask Josh **one decision at a time**, and end every reply with a short recap of exactly what he needs to answer.
 
 ## Rules for design decisions
 

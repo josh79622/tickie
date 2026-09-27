@@ -24,7 +24,12 @@ I finalize everything. Agents produce first drafts and do the work, and hand thi
 
 ### Screens
 
-1. The home page shows the five most recent projects (most recent = latest status history entry, derived, not stored). Each shows only its description and its current phase and task (the first unfinished task in planned order).
+1. The home page shows **all** projects, in my own order (drag to reorder). Each shows only its description and its current phase and task (the first unfinished task in planned order).
+   - **+** adds a project in one of two ways; new projects go to the top:
+     - **Open existing folder**: pick a folder already on my Mac. If it belonged to a removed project, that project comes back instead.
+     - **New empty folder**: enter a name and description, and pick where the folder goes each time; Tickie creates the folder.
+   - Folders are always picked with a folder dialog, never by typing a path.
+   - **×** removes a project from the home page after a confirmation. It's a soft removal: nothing under it is deleted. Adding its folder again brings it back with all its phases, tasks and history.
 2. Opening a project shows all of its pending items, sorted by time. There is no priority ordering.
 3. I **manage** one project at a time, but agents from several projects can **run** in the background at the same time.
 4. A task that has an agent running on it shows a small animation or indicator light, so I can tell at a glance whether the agent is working or the task is waiting on me.
@@ -131,7 +136,10 @@ Layer by layer: Project → Phase → Task → Test case / Status history, each 
 | Field | Source |
 | --- | --- |
 | Name, description | Entered by me |
+| Folder path | The project's folder on disk, picked or created when the project is added; this is what identifies a project |
 | Baseline frozen at | Recorded automatically when the plan is approved |
+| Sort order | Set by me by dragging on the home page |
+| Removed at | Set when I remove the project from the home page; cleared when it's restored |
 | Current phase and task | Not stored; derived from task statuses and order |
 
 ### Phase
@@ -206,6 +214,7 @@ The UI and the background manager are two separate programs that talk through a 
 
 ### Still open
 
+- Whether removing a project should stop agents still running on it.
 - Whether "Needs decision" and the other status names above are final.
 - What to name the Task class in C# code: `Task` clashes with C#'s built-in `System.Threading.Tasks.Task` (decide when writing the backend).
 - Who drafts the Build tasks when a Design task is adopted (the planning agent, the design agent, or me).

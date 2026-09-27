@@ -10,7 +10,13 @@ export interface Project {
   id: Id
   name: string
   description: string
+  // The project's folder on disk; this is what identifies a project, not its name
+  folderPath: string
+  // My own order on the home page, set by dragging; 1 is at the top
+  sortOrder: number
   baselineFrozenAt: IsoDateTime | null
+  // Set when I remove the project from the home page; nothing under it is deleted
+  removedAt: IsoDateTime | null
 }
 
 export interface Phase {

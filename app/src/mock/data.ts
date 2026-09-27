@@ -22,31 +22,46 @@ export const projects: Project[] = [
     id: 1,
     name: 'Tickie',
     description: 'Dispatch work to local AI coding agents and gate every task with locked tests.',
+    folderPath: '~/Projects/tickie',
+    sortOrder: 1,
     baselineFrozenAt: at(20, 9),
+    removedAt: null,
   },
   {
     id: 2,
     name: 'Recipe Box',
     description: 'Save family recipes and search them by ingredient.',
+    folderPath: '~/Projects/recipe-box',
+    sortOrder: 2,
     baselineFrozenAt: at(15, 9),
+    removedAt: null,
   },
   {
     id: 3,
     name: 'Budget Buddy',
     description: 'Import bank CSVs and see where the money went each month.',
+    folderPath: '~/Projects/budget-buddy',
+    sortOrder: 3,
     baselineFrozenAt: at(10, 9),
+    removedAt: null,
   },
   {
     id: 4,
     name: 'Portfolio Site',
     description: 'A personal site listing projects for job applications.',
+    folderPath: '~/Projects/portfolio-site',
+    sortOrder: 4,
     baselineFrozenAt: at(5, 9),
+    removedAt: null,
   },
   {
     id: 5,
     name: 'Habit Tracker',
     description: 'Track daily habits with streaks and a weekly summary.',
+    folderPath: '~/Projects/habit-tracker',
+    sortOrder: 5,
     baselineFrozenAt: null,
+    removedAt: null,
   },
 ]
 
@@ -485,4 +500,20 @@ export const agentRuns: AgentRun[] = [
   { id: 2, taskId: 10, agent: 'Codex', startedAt: at(27, 9), endedAt: null },
   { id: 3, taskId: 16, agent: 'Codex', startedAt: at(27, 9), endedAt: null },
   { id: 4, taskId: 9, agent: 'Claude Code', startedAt: at(26, 12), endedAt: at(26, 19) },
+]
+
+// A pretend file system for the folder picker. In the real app Tauri opens the macOS folder dialog instead.
+export const folders: string[] = [
+  '~/Code',
+  '~/Code/dotfiles',
+  '~/Code/notes-app',
+  '~/Documents',
+  '~/Documents/Resumes',
+  '~/Projects',
+  '~/Projects/budget-buddy',
+  '~/Projects/habit-tracker',
+  '~/Projects/portfolio-site',
+  '~/Projects/recipe-box',
+  '~/Projects/tickie',
+  '~/Projects/weather-cli',
 ]

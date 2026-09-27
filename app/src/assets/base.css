@@ -2,18 +2,33 @@
   --color-background: #ffffff;
   --color-background-soft: #f8f8f8;
   --color-border: rgba(60, 60, 60, 0.12);
+  --color-border-strong: rgba(60, 60, 60, 0.35);
+  --color-band: #f4f5f7;
   --color-text: #2c3e50;
   --color-text-muted: rgba(60, 60, 60, 0.66);
+  --color-running: #16a34a;
+  --color-waiting: #b45309;
+  --color-waiting-bg: #fef3c7;
+  --color-accent: #2563eb;
+  --color-danger: #dc2626;
+  --color-danger-bg: #fee2e2;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-background: #181818;
-    --color-background-soft: #222222;
-    --color-border: rgba(84, 84, 84, 0.48);
-    --color-text: #ffffff;
-    --color-text-muted: rgba(235, 235, 235, 0.64);
-  }
+/* Light is the default; dark only when chosen with the theme toggle */
+:root[data-theme='dark'] {
+  --color-background: #181818;
+  --color-background-soft: #222222;
+  --color-border: rgba(84, 84, 84, 0.48);
+  --color-border-strong: rgba(160, 160, 160, 0.6);
+  --color-band: #202020;
+  --color-text: #ffffff;
+  --color-text-muted: rgba(235, 235, 235, 0.64);
+  --color-running: #4ade80;
+  --color-waiting: #fbbf24;
+  --color-waiting-bg: rgba(251, 191, 36, 0.15);
+  --color-accent: #3b82f6;
+  --color-danger: #f87171;
+  --color-danger-bg: rgba(248, 113, 113, 0.15);
 }
 
 *,
