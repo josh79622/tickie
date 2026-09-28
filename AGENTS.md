@@ -9,7 +9,9 @@ The full product rules, status flow, data structures and technical decisions liv
 
 - The design phase is complete. The **home page** and **project page** demos are built (Vue 3 with mock data): phases with their tasks, a task detail side panel, opening tasks by hand, and a floating chat with the planning agent / IT supervisor (demo replies only).
 - **The demo is finished**: a Build or Debug task can be clicked from Todo to Done in its side panel, including the Needs decision branch (agent steps are simulated with dashed "Simulate agent" buttons). Design and QA have no status buttons. Visual polish is deliberately left for real frontend work.
-- Next: the C# manager (see "How we work together"). Start by having Josh pick the first EF Core entity to model and explain why.
+- The C# manager has started (see "How we work together"). `manager/` is an ASP.NET Core Web API (Controllers, .NET 10) with EF Core SQLite installed. The first entity, `Entities/Project.cs`, is written and builds cleanly; the template's WeatherForecast sample is kept as a reference until the first real controller exists.
+  - Decisions Josh made on `Project`: `int` Id (single database, single writer, matches the frontend's `Id = number`); `Id` and `CreatedAt` use `private init`; `CreatedAt` defaults to `DateTime.UtcNow` (all timestamps are stored in UTC); `Name`, `FolderPath` and `SortOrder` are `required`; entities live in `Entities/`, separate from future request/response DTOs.
+- Next: the `DbContext` (register it in `Program.cs`, point it at a SQLite file), then the first migration.
 - Known leftovers for real frontend work (not bugs in the design):
   - Mock task 3 ("Project page") is a Done Build task with no test cases, which the rules don't allow; add some.
   - Long task titles wrap in narrow windows because of the wider type column.
@@ -18,7 +20,7 @@ The full product rules, status flow, data structures and technical decisions liv
 - Folder structure (one repo for everything):
   - `docs/`: design documents (`brief.md`)
   - `app/`: the UI (Vue 3 + TypeScript). Tauri will be added later as `app/src-tauri/`.
-  - `manager/`: the background manager (C#). Not created yet; Josh sets it up himself when backend work starts.
+  - `manager/`: the background manager (C#, project `Tickie.Manager`). Run `dotnet build` inside it to check changes.
 - Where things live in `app/src/`:
   - `types/models.ts`: TypeScript types mirroring the brief's "Data model"; the contract with the future C# API.
   - `mock/data.ts`: mock data in that shape (5 projects; "Tickie" covers most task types and statuses), plus a pretend folder list for the folder picker.

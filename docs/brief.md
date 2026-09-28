@@ -145,6 +145,7 @@ Layer by layer: Project → Phase → Task → Test case / Status history, each 
 | --- | --- |
 | Name, description | Entered by me |
 | Folder path | The project's folder on disk, picked or created when the project is added; this is what identifies a project |
+| Created at | Recorded automatically when the project is added |
 | Baseline frozen at | Recorded automatically when the plan is approved |
 | Sort order | Set by me by dragging on the home page |
 | Removed at | Set when I remove the project from the home page; cleared when it's restored |
