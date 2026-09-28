@@ -6,7 +6,7 @@ Sep 26, 2026 · @Josh Tsai
 
 A fully local Mac desktop app for opening tickets and dispatching work to AI coding agents on my machine from a PM's (Project Manager's) point of view, with every task gated by locked test cases. The name is Tickie: a ticket is only done once every item on its acceptance checklist has been ticked.
 
-**Goals**: stop getting lost halfway through my own side projects, and have a full-stack project I can talk about in job interviews in Sydney.
+**Goals**: stop getting lost halfway through my own side projects, and build a full-stack desktop app end to end, from the data model to real-time updates.
 
 **Key difference**: existing tools put the diff at the center of review. This tool puts the **test cases** at the center; I only look at the code when I need to.
 
@@ -210,9 +210,9 @@ The UI and the background manager are two separate programs that talk through a 
 | Layer | Choice | Why |
 | --- | --- | --- |
 | Desktop shell | Tauri (Mac build only for now) | Uses less memory than Electron; can bundle the C# manager as a sidecar; a Windows build is possible later |
-| UI | Vue 3 + TypeScript | I want to practice it; common at Taiwanese companies; also in demand at .NET agencies in Sydney. TypeScript types for the mock data act as the contract with the future C# API |
-| Background manager | C# + ASP.NET Core (Controllers) | Builds on my C# from UTS courses; lots of .NET jobs in Sydney; one framework for both the API and background services |
-| Data access | EF Core (Entity Framework Core, an ORM) | Can switch databases; also a common skill in .NET job listings |
+| UI | Vue 3 + TypeScript | Composition API and TypeScript keep components small and typed. TypeScript types for the mock data act as the contract with the future C# API |
+| Background manager | C# + ASP.NET Core (Controllers) | Strongly typed and mature; one framework for both the API and background services |
+| Data access | EF Core (Entity Framework Core, an ORM) | Can switch databases; migrations keep the schema versioned alongside the code |
 | Database | SQLite | A single file built into the manager; no separate server |
 | Real-time updates | SignalR | Pushes task changes; reconnects automatically when the laptop wakes up |
 | Project output | Project folder + git | The brief, agents.md, tests and code are versioned in git; commits serve as resume checkpoints |

@@ -45,7 +45,7 @@ The UI and the C# manager are two separate programs that talk through a local AP
 
 ## How we work together (important)
 
-This is Josh's learning project and job-hunting portfolio piece. He needs to be able to explain every detail in an interview.
+This is Josh's learning project. He needs to be able to explain every detail of it.
 
 - **Josh writes the backend (C#, ASP.NET Core, EF Core, SignalR) himself, step by step.** Act as a tutor: explain one concept at a time, guide his thinking with questions first, and don't hand over a complete implementation unless Josh explicitly asks for one.
 - **Frontend (Vue 3)**: you can help more here, but Josh reviews every change.
