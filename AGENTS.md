@@ -9,7 +9,11 @@ The full product rules, status flow, data structures and technical decisions liv
 
 - The design phase is complete. The **home page** and **project page** demos are built (Vue 3 with mock data): phases with their tasks, a task detail side panel, opening tasks by hand, and a floating chat with the planning agent / IT supervisor (demo replies only).
 - **The demo is finished**: a Build or Debug task can be clicked from Todo to Done in its side panel, including the Needs decision branch (agent steps are simulated with dashed "Simulate agent" buttons). Design and QA have no status buttons. Visual polish is deliberately left for real frontend work.
-- Next: the C# manager (see "How we work together"). Start by having Josh pick the first EF Core entity to model and explain why.
+- The C# manager has started (see "How we work together"). `manager/` is an ASP.NET Core Web API (Controllers, .NET 10) with EF Core SQLite installed. The first entity, `Entities/Project.cs`, is written and builds cleanly; the template's WeatherForecast sample is kept as a reference until the first real controller exists.
+  - Decisions Josh made on `Project`: `int` Id (single database, single writer, matches the frontend's `Id = number`); `Id` and `CreatedAt` use `private init`; `CreatedAt` defaults to `DateTime.UtcNow` (all timestamps are stored in UTC); `Name`, `FolderPath` and `SortOrder` are `required`; entities live in `Entities/`, separate from future request/response DTOs.
+- `Data/TickieDbContext.cs` has one `DbSet<Project>` and takes its options through the constructor. `Program.cs` registers it with `UseSqlite`, reading the `Tickie` connection string from `appsettings.json` before `AddDbContext` so a missing value fails at startup. SQLite files (`*.db`, `*.db-shm`, `*.db-wal`) are git-ignored: they hold private data and are rebuilt from migrations.
+- `TickieDbContext.OnModelCreating` holds all database rules (Fluent API, chosen over attributes so rules stay in one place): so far a unique index on `Project.FolderPath`, since the folder identifies a project. `dotnet-ef` is a local tool (`manager/dotnet-tools.json`, run `dotnet tool restore`); the `InitialCreate` migration is applied with `dotnet ef database update`.
+- Next: pick between the first API (`ProjectsController` with request/response DTOs) and the next entity (`Phase`, the first foreign key). Leftover: `Entities/Project.cs` still uses 2-space indentation; C# uses 4.
 - Known leftovers for real frontend work (not bugs in the design):
   - Mock task 3 ("Project page") is a Done Build task with no test cases, which the rules don't allow; add some.
   - Long task titles wrap in narrow windows because of the wider type column.
@@ -18,7 +22,7 @@ The full product rules, status flow, data structures and technical decisions liv
 - Folder structure (one repo for everything):
   - `docs/`: design documents (`brief.md`)
   - `app/`: the UI (Vue 3 + TypeScript). Tauri will be added later as `app/src-tauri/`.
-  - `manager/`: the background manager (C#). Not created yet; Josh sets it up himself when backend work starts.
+  - `manager/`: the background manager (C#, project `Tickie.Manager`). Run `dotnet build` inside it to check changes.
 - Where things live in `app/src/`:
   - `types/models.ts`: TypeScript types mirroring the brief's "Data model"; the contract with the future C# API.
   - `mock/data.ts`: mock data in that shape (5 projects; "Tickie" covers most task types and statuses), plus a pretend folder list for the folder picker.
@@ -43,7 +47,7 @@ The UI and the C# manager are two separate programs that talk through a local AP
 
 ## How we work together (important)
 
-This is Josh's learning project and job-hunting portfolio piece. He needs to be able to explain every detail in an interview.
+This is Josh's learning project. He needs to be able to explain every detail of it.
 
 - **Josh writes the backend (C#, ASP.NET Core, EF Core, SignalR) himself, step by step.** Act as a tutor: explain one concept at a time, guide his thinking with questions first, and don't hand over a complete implementation unless Josh explicitly asks for one.
 - **Frontend (Vue 3)**: you can help more here, but Josh reviews every change.
