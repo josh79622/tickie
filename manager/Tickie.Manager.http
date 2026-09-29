@@ -1,6 +1,6 @@
 @Tickie.Manager_HostAddress = http://localhost:5051
 
-GET {{Tickie.Manager_HostAddress}}/weatherforecast/
+GET {{Tickie.Manager_HostAddress}}/projects
 Accept: application/json
 
 ###
