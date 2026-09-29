@@ -36,23 +36,45 @@ public class ProjectsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ProjectResponse>> Create(CreateProjectRequest request)
     {
+        var existingProject = await _dbContext.Projects
+            .FirstOrDefaultAsync(p => p.FolderPath == request.FolderPath);
+        
         var smallestSortOrder = await _dbContext.Projects
             .Where(p => p.RemovedAt == null)
             .MinAsync(p => (int?)p.SortOrder);
+
+        var topSortOrder = (smallestSortOrder ?? 1) - 1;
+
+        if (existingProject != null && existingProject.RemovedAt == null)
+        {
+            return Conflict(new { message = "The folder is already a project." });
+        } 
+        else if (existingProject != null && existingProject.RemovedAt != null)
+        {
+            existingProject.RemovedAt = null;
+            existingProject.SortOrder = topSortOrder;
+            await _dbContext.SaveChangesAsync();
+            return Ok(ToResponse(existingProject));
+        }
 
         var project = new Project
         {
             Name = request.Name,
             Description = request.Description,
             FolderPath = request.FolderPath,
-            SortOrder = (smallestSortOrder ?? 1) - 1
+            SortOrder = topSortOrder
         };
 
         _dbContext.Projects.Add(project);
         
         await _dbContext.SaveChangesAsync();
 
-        var response = new ProjectResponse(
+        return StatusCode(StatusCodes.Status201Created, ToResponse(project));
+    }
+
+    private static ProjectResponse ToResponse(Project project)
+    {
+        return new ProjectResponse(
             project.Id,
             project.Name,
             project.Description,
@@ -60,7 +82,5 @@ public class ProjectsController : ControllerBase
             project.SortOrder,
             project.BaselineFrozenAt
         );
-
-        return StatusCode(StatusCodes.Status201Created, response);
     }
 }
