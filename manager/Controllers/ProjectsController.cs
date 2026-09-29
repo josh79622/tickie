@@ -84,7 +84,7 @@ public class ProjectsController : ControllerBase
         project.RemovedAt = DateTime.UtcNow;
         await _dbContext.SaveChangesAsync();
 
-        return Ok(ToResponse(project));
+        return NoContent();
     }
 
     private static ProjectResponse ToResponse(Project project)
