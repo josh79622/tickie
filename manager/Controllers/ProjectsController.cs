@@ -87,6 +87,30 @@ public class ProjectsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPatch("reorder")]
+    public async Task<ActionResult> Reorder(ReorderProjectsRequest request)
+    {
+        var projects = await _dbContext.Projects
+            .Where(p => p.RemovedAt == null)
+            .ToListAsync();
+        
+        var activeIds = projects.Select(p => p.Id).ToHashSet();
+
+        if (request.ProjectIds.Count != projects.Count || !activeIds.SetEquals(request.ProjectIds))
+        {
+            return BadRequest(new { message = "The list must contain every project on the home page exactly once." });
+        }
+
+        for (var i = 0; i < request.ProjectIds.Count; i++)
+        {
+            var project = projects.First(p => p.Id == request.ProjectIds[i]);
+            project.SortOrder = i + 1;
+        }
+
+        await _dbContext.SaveChangesAsync();
+        return NoContent();
+    }
+
     private static ProjectResponse ToResponse(Project project)
     {
         return new ProjectResponse(
