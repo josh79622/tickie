@@ -28,7 +28,7 @@ I finalize everything. Agents produce first drafts and do the work, and hand thi
    - **Current phase** shows how far the project has got: the last phase in which any task has moved past Todo, or the next phase once that one's QA is Done. Reopening an earlier phase (adding a task after its QA was Done) does not move it back.
    - **Current task** is the first unfinished task of the current phase in time order (earliest planned start, ties broken by task order). If the current phase has nothing unfinished, it falls back to the earliest unfinished task in any phase.
    - **+** adds a project in one of two ways; new projects go to the top:
-     - **Open existing folder**: pick a folder already on my Mac. If it belonged to a removed project, that project comes back instead.
+     - **Open existing folder**: pick a folder already on my Mac. If it belonged to a removed project, that project comes back instead. If it already belongs to a project on the home page, Tickie says so and adds nothing.
      - **New empty folder**: enter a name and description, and pick where the folder goes each time; Tickie creates the folder.
    - Folders are always picked with a folder dialog, never by typing a path.
    - **×** removes a project from the home page after a confirmation. It's a soft removal: nothing under it is deleted. Adding its folder again brings it back with all its phases, tasks and history.
