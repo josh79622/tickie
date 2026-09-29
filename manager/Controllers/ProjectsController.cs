@@ -72,6 +72,7 @@ public class ProjectsController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, ToResponse(project));
     }
 
+    [HttpPatch("{id}/remove")]
     public async Task<ActionResult<ProjectResponse>> Remove(int id)
     {
         var project = await _dbContext.Projects.FindAsync(id);
