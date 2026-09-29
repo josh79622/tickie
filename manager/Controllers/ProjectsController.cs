@@ -72,6 +72,20 @@ public class ProjectsController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, ToResponse(project));
     }
 
+    public async Task<ActionResult<ProjectResponse>> Remove(int id)
+    {
+        var project = await _dbContext.Projects.FindAsync(id);
+        if (project == null || project.RemovedAt != null)
+        {
+            return NotFound();
+        }
+
+        project.RemovedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync();
+
+        return Ok(ToResponse(project));
+    }
+
     private static ProjectResponse ToResponse(Project project)
     {
         return new ProjectResponse(
