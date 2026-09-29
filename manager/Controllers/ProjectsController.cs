@@ -73,7 +73,7 @@ public class ProjectsController : ControllerBase
     }
 
     [HttpPatch("{id}/remove")]
-    public async Task<ActionResult<ProjectResponse>> Remove(int id)
+    public async Task<ActionResult> Remove(int id)
     {
         var project = await _dbContext.Projects.FindAsync(id);
         if (project == null || project.RemovedAt != null)
