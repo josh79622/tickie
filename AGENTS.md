@@ -34,7 +34,7 @@ The full product rules, status flow, data structures and technical decisions liv
   - The side panel's status badge isn't colored like the list's; the panel, chat and new-task dialog were built quickly and need a design pass.
   - Status buttons for Design and QA tasks, and QA moving from Waiting for dev to Running automatically, aren't built.
 - Folder structure (one repo for everything):
-  - `docs/`: design documents (`brief.md`)
+  - `docs/`: design documents (`brief.md` for the product rules, `decisions.md` for why the code is shaped the way it is; Josh uses it to prepare for interviews, so add an entry whenever a design choice is worth explaining)
   - `app/`: the UI (Vue 3 + TypeScript). Tauri will be added later as `app/src-tauri/`.
   - `manager/`: the background manager (C#, project `Tickie.Manager`). Run `dotnet build` inside it to check changes.
 - Where things live in `app/src/`:
