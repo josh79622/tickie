@@ -22,14 +22,22 @@ The full product rules, status flow, data structures and technical decisions liv
   - Errors are returned as JSON (`{ "message": ... }`). Test by hand with `curl` or `manager/Tickie.Manager.http`, and restart the manager (or use `dotnet watch`) after every C# change.
 - `Phase` is the second vertical slice. `Entities/Phase.cs` has `Id`, `ProjectId`, `Name` and `Order` (all but `Id` `required`); "is done" isn't stored because it's derived from the phase's QA task. Josh's decisions:
   - Phases are created by an AI agent through the manager's API; there is no create-phase button. `POST /projects/{projectId}/phases` takes only `Name` (`CreatePhaseRequest`); the manager assigns `Order` = highest + 1 (the first phase gets 1). 404 for a missing or removed project, 409 for a name already used in that project, 201 otherwise.
-  - It doesn't create the phase's QA task yet, because `Task` doesn't exist; once it does, a phase and its QA task must be saved together (brief rule 11).
+  - It doesn't create the phase's QA ticket yet, because `Ticket` doesn't exist; once it does, a phase and its QA ticket must be saved together (brief rule 11).
   - The foreign key is set in `OnModelCreating` with `HasOne<Project>().WithMany().HasForeignKey(ph => ph.ProjectId)` (no navigation properties). EF Core's default cascade delete never fires because projects are only soft-removed.
   - `(ProjectId, Order)` and `(ProjectId, Name)` each have their own unique index (two rules, so two indexes; one three-column index would only block exact duplicates). The `(ProjectId, Order)` index also replaces EF Core's automatic `ProjectId` index because `ProjectId` comes first. The manager checks names too, so callers get a clear 409; the index is the safety net.
   - `PATCH /projects/{projectId}/phases/reorder` takes every phase Id of the project in the new order (`ReorderPhasesRequest`), 400 unless each appears exactly once. To get past the `(ProjectId, Order)` index it renumbers in two passes (temporary negative orders, then 1, 2, 3…) inside one transaction, so a failure rolls everything back.
   - `Controllers/PhasesController.cs` has its own controller, since it's about phases rather than projects, routed at `projects/{projectId}/[controller]`. `GET /projects/{projectId}/phases` returns `PhaseResponse` DTOs ordered by `Order`, or 404 if the project is missing or removed.
   - Until the planning agent exists, test phases are inserted by hand with `sqlite3 tickie.db` (run `PRAGMA foreign_keys = ON;` first, since the command-line tool doesn't enforce foreign keys by default).
 - The manager listens on `http://localhost:5051` (`Properties/launchSettings.json`). Port 5000 on a Mac belongs to the AirPlay Receiver, which answers with an empty 403.
-- Next: the `Task` entity (one phase has many tasks). Leftover: the frontend's `Project` type still has `removedAt`, which should go once the UI uses the real API.
+- A unit of work is now called a **Ticket** (decisions.md entry 4); the brief and C# use it, the frontend still says "task". The whole project uses American spelling (`Canceled`, `Analyzing`).
+- `Ticket` is the third entity (plain fields done, migration `AddTicket` applied; decisions.md entries 5–12). `Entities/Ticket.cs` has `Id`, `PhaseId`, `Title`, `Description`, `Type`, `Order`, `PlannedStart`, `EstimatedHours`, `AssignedAgent`, `Status`, `CreatedAt`. Josh's decisions:
+  - `Description` replaces the brief's tagline and is required. Optional labels come later in their own table.
+  - `Type` (`TicketType`) and `Status` (`TicketStatus`, one enum with all 16 statuses) are enums saved as text with `HasConversion<string>()`. `Status` defaults to `Todo`; the manager must check that a status fits the ticket's type.
+  - `PlannedStart` and `EstimatedHours` are nullable: tickets opened by hand have no estimate and go last in a phase's list.
+  - `AssignedAgent` is a required string; the manager will accept only agent tools it detects on the machine.
+  - `(PhaseId, Order)` is unique, with a foreign key to `Phase`. "Is unplanned" isn't stored: it's `CreatedAt` > the project's `BaselineFrozenAt`. The brief's "source ticket" was dropped.
+- Next: creating a phase must also create its QA ticket in the same transaction (brief rule 11), then the Ticket endpoints.
+- Frontend leftovers once the UI uses the real API: rename task → ticket, `tagline` → `description`, statuses to American spelling, drop `sourceTaskId`, and drop `removedAt` from the `Project` type.
 - Known leftovers for real frontend work (not bugs in the design):
   - Mock task 3 ("Project page") is a Done Build task with no test cases, which the rules don't allow; add some.
   - Long task titles wrap in narrow windows because of the wider type column.
@@ -67,7 +75,7 @@ This is Josh's learning project. He needs to be able to explain every detail of 
 
 - **Josh writes the backend (C#, ASP.NET Core, EF Core, SignalR) himself, step by step.** Act as a tutor: explain one concept at a time, guide his thinking with questions first, and don't hand over a complete implementation unless Josh explicitly asks for one.
 - **Frontend (Vue 3)**: you can help more here, but Josh reviews every change.
-- The whole system uses English: UI text, code, database values and documentation.
+- The whole system uses American English: UI text, code, database values and documentation (e.g. Canceled, Analyzing).
 - Spell out an abbreviation in parentheses the first time it appears.
 - Use everyday analogies instead of jargon.
 - Be direct and honest; no reassurance. Point out problems when you see them.

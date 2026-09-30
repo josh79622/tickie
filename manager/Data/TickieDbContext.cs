@@ -27,8 +27,27 @@ public class TickieDbContext : DbContext
         modelBuilder.Entity<Phase>()
             .HasIndex(ph => new { ph.ProjectId, ph.Name })
             .IsUnique();
+
+        modelBuilder.Entity<Ticket>()
+            .Property(t => t.Type)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<Ticket>()
+            .HasOne<Phase>()
+            .WithMany()
+            .HasForeignKey(t => t.PhaseId);
+
+        modelBuilder.Entity<Ticket>()
+            .HasIndex(t => new { t.PhaseId, t.Order })
+            .IsUnique();
+
+        modelBuilder.Entity<Ticket>()
+            .Property(t => t.Status)
+            .HasConversion<string>();
     }
 
     public DbSet<Project> Projects { get; set; }
     public DbSet<Phase> Phases { get; set; }
+
+    public DbSet<Ticket> Tickets { get; set; }
 }
