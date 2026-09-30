@@ -155,7 +155,8 @@ Layer by layer: Project → Phase → Task → Test case / Status history, each 
 
 | Field | Source |
 | --- | --- |
-| Name, order | Planned by the planning agent, approved by me |
+| Name, order | Planned by the planning agent, approved by me. A phase added later goes to the end. Names are unique within a project |
+| Order (after creation) | Can be changed by me or an agent (reordering) |
 | Is done | Not stored; true when the phase's QA task is Done |
 
 ### Task

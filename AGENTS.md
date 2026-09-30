@@ -20,14 +20,23 @@ The full product rules, status flow, data structures and technical decisions liv
   - `PATCH /projects/reorder`: the frontend sends every home-page project Id in the new order and the manager renumbers them 1, 2, 3…; 400 unless the list has each project exactly once. Addresses use verbs (`remove`, `reorder`) consistently.
   - Removed projects keep a stale `SortOrder`; it's harmless because every query filters them out and restoring always assigns a fresh one.
   - Errors are returned as JSON (`{ "message": ... }`). Test by hand with `curl` or `manager/Tickie.Manager.http`, and restart the manager (or use `dotnet watch`) after every C# change.
-- Next: the `Phase` entity (the first foreign key, one project has many phases). Leftovers: two small spacing nits in `Entities/Project.cs` (a trailing space after `class Project`, and `init;}` missing a space); the frontend's `Project` type still has `removedAt`, which should go once the UI uses the real API. two small spacing nits in `Entities/Project.cs` (a trailing space after `class Project`, and `init;}` missing a space).
+- `Phase` is the second vertical slice. `Entities/Phase.cs` has `Id`, `ProjectId`, `Name` and `Order` (all but `Id` `required`); "is done" isn't stored because it's derived from the phase's QA task. Josh's decisions:
+  - Phases are created by an AI agent through the manager's API; there is no create-phase button. `POST /projects/{projectId}/phases` takes only `Name` (`CreatePhaseRequest`); the manager assigns `Order` = highest + 1 (the first phase gets 1). 404 for a missing or removed project, 409 for a name already used in that project, 201 otherwise.
+  - It doesn't create the phase's QA task yet, because `Task` doesn't exist; once it does, a phase and its QA task must be saved together (brief rule 11).
+  - The foreign key is set in `OnModelCreating` with `HasOne<Project>().WithMany().HasForeignKey(ph => ph.ProjectId)` (no navigation properties). EF Core's default cascade delete never fires because projects are only soft-removed.
+  - `(ProjectId, Order)` and `(ProjectId, Name)` each have their own unique index (two rules, so two indexes; one three-column index would only block exact duplicates). The `(ProjectId, Order)` index also replaces EF Core's automatic `ProjectId` index because `ProjectId` comes first. The manager checks names too, so callers get a clear 409; the index is the safety net.
+  - `PATCH /projects/{projectId}/phases/reorder` takes every phase Id of the project in the new order (`ReorderPhasesRequest`), 400 unless each appears exactly once. To get past the `(ProjectId, Order)` index it renumbers in two passes (temporary negative orders, then 1, 2, 3…) inside one transaction, so a failure rolls everything back.
+  - `Controllers/PhasesController.cs` has its own controller, since it's about phases rather than projects, routed at `projects/{projectId}/[controller]`. `GET /projects/{projectId}/phases` returns `PhaseResponse` DTOs ordered by `Order`, or 404 if the project is missing or removed.
+  - Until the planning agent exists, test phases are inserted by hand with `sqlite3 tickie.db` (run `PRAGMA foreign_keys = ON;` first, since the command-line tool doesn't enforce foreign keys by default).
+- The manager listens on `http://localhost:5051` (`Properties/launchSettings.json`). Port 5000 on a Mac belongs to the AirPlay Receiver, which answers with an empty 403.
+- Next: the `Task` entity (one phase has many tasks). Leftover: the frontend's `Project` type still has `removedAt`, which should go once the UI uses the real API.
 - Known leftovers for real frontend work (not bugs in the design):
   - Mock task 3 ("Project page") is a Done Build task with no test cases, which the rules don't allow; add some.
   - Long task titles wrap in narrow windows because of the wider type column.
   - The side panel's status badge isn't colored like the list's; the panel, chat and new-task dialog were built quickly and need a design pass.
   - Status buttons for Design and QA tasks, and QA moving from Waiting for dev to Running automatically, aren't built.
 - Folder structure (one repo for everything):
-  - `docs/`: design documents (`brief.md`)
+  - `docs/`: design documents (`brief.md` for the product rules, `decisions.md` for why the code is shaped the way it is; Josh uses it to prepare for interviews, so add an entry whenever a design choice is worth explaining)
   - `app/`: the UI (Vue 3 + TypeScript). Tauri will be added later as `app/src-tauri/`.
   - `manager/`: the background manager (C#, project `Tickie.Manager`). Run `dotnet build` inside it to check changes.
 - Where things live in `app/src/`:
