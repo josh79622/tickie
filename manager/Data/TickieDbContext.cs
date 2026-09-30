@@ -14,7 +14,17 @@ public class TickieDbContext : DbContext
         modelBuilder.Entity<Project>()
             .HasIndex(p => p.FolderPath)
             .IsUnique();
+
+        modelBuilder.Entity<Phase>()
+            .HasOne<Project>()
+            .WithMany()
+            .HasForeignKey(ph => ph.ProjectId);
+
+        modelBuilder.Entity<Phase>()
+            .HasIndex(ph => new { ph.ProjectId, ph.Order })
+            .IsUnique();
     }
 
     public DbSet<Project> Projects { get; set; }
+    public DbSet<Phase> Phases { get; set; }
 }
