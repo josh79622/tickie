@@ -23,6 +23,10 @@ public class TickieDbContext : DbContext
         modelBuilder.Entity<Phase>()
             .HasIndex(ph => new { ph.ProjectId, ph.Order })
             .IsUnique();
+
+        modelBuilder.Entity<Phase>()
+            .HasIndex(ph => new { ph.ProjectId, ph.Name })
+            .IsUnique();
     }
 
     public DbSet<Project> Projects { get; set; }
