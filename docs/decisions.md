@@ -4,6 +4,19 @@ Design decisions worth explaining, and why we made them. The product rules live 
 
 Each entry has: the question, what we decided, why, the downside, and the other options we said no to.
 
+## Where I questioned the design myself
+
+I built this with an AI tutor, but I didn't just accept what it suggested. These are the places where my own question or idea changed the design:
+
+- **Entry 5:** I wanted a real description on each ticket, not just a one-line tagline.
+- **Entry 12:** I asked "why do we need this field?" about the source ticket. Nothing used it, so we removed it.
+- **Entry 14:** I didn't want the default agent in `appsettings.json`. It's a user choice, so it belongs in the database.
+- **Entry 15:** I pointed out that the "existing projects" we were worrying about were only test rows. That changed the question to "what does a brand-new install need?"
+- **Entry 16:** I came up with the **Manual** option, so work can go on when I'm out of AI quota.
+- **Entry 18:** I noticed the QA ticket would get `Order = 1` even though QA runs last. Following that up showed `Order` didn't do anything useful, so we removed it.
+
+In one sentence: *"I used AI to move faster, but I kept asking why each piece existed, and several fields and rules changed or disappeared because of that."*
+
 ---
 
 ## 1. Creating a phase: the manager picks its number
@@ -214,7 +227,7 @@ Save the name as text (`"Build"`). In `OnModelCreating`: `.HasConversion<string>
 
 ---
 
-## 7. Ticket order is unique inside a phase
+## 7. Ticket order is unique inside a phase (replaced by entry 18)
 
 *Date: 2026-09-30 · Area: database · Related: `brief.md` rules 1 and 2*
 
@@ -533,3 +546,36 @@ The global default agent needs a home in the database. It's one value for the wh
 ### Other options I said no to
 
 - **Create the row the first time a project needs it:** then every place that reads it must handle "not there yet".
+
+---
+
+## 18. Tickets have no Order field
+
+*Date: 2026-10-03 · Area: data model · Replaces: entry 7*
+
+### How it came up
+
+I noticed this myself. While writing the QA ticket, I pointed out that QA runs last, so `Order = 1` looked wrong. Following that up showed `Order` didn't matter at all.
+
+### Question
+
+While creating the QA ticket, I asked: should QA get `Order = 1` or the last number? That showed that `Order` barely does anything. Do we need it?
+
+### Decision
+
+Remove `Order` from Ticket, along with its unique `(PhaseId, Order)` index. A phase's tickets are listed by planned start. If two start at the same time, the one with the **smaller `Id`** (created first) comes first.
+
+### Why
+
+- **Planned start already decides the list.** QA comes last because it has no planned start yet (entry 8), and later because the planning agent plans it last. `Order` doesn't change that.
+- **`Id` already breaks ties.** It's unique, and it grows as tickets are created. So "same time → older ticket first" works without an extra field.
+- **`Order` only costs work.** Someone has to fill it in, there's a unique index to keep, and reordering would need the two-step trick (entry 3).
+- **There's no ticket dragging** in the brief, so nobody would ever set `Order` by hand.
+
+### Downside
+
+- I can't manually choose which of two same-time tickets comes first. If I add ticket dragging one day, `Order` comes back.
+
+### Other options I said no to
+
+- **Keep `Order` and give QA the last number:** extra work for a field that doesn't change what I see.

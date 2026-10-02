@@ -38,10 +38,6 @@ public class TickieDbContext : DbContext
             .HasForeignKey(t => t.PhaseId);
 
         modelBuilder.Entity<Ticket>()
-            .HasIndex(t => new { t.PhaseId, t.Order })
-            .IsUnique();
-
-        modelBuilder.Entity<Ticket>()
             .Property(t => t.Status)
             .HasConversion<string>();
 

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tickie.Manager.Dtos;
 using Tickie.Manager.Entities;
+using System;
 
 namespace Tickie.Manager.Controllers;
 
@@ -57,12 +58,18 @@ public class ProjectsController : ControllerBase
             return Ok(ToResponse(existingProject));
         }
 
+        var settings = await _dbContext.UserSettings.FindAsync(1);
+        if (settings == null)
+        {
+            throw new InvalidOperationException("UserSettings row 1 is missing.");
+        }
         var project = new Project
         {
             Name = request.Name,
             Description = request.Description,
             FolderPath = request.FolderPath,
-            SortOrder = topSortOrder
+            SortOrder = topSortOrder,
+            DefaultAgent = settings.DefaultAgent
         };
 
         _dbContext.Projects.Add(project);

@@ -26,7 +26,7 @@ I finalize everything. Agents produce first drafts and do the work, and hand thi
 
 1. The home page shows **all** projects, in my own order (drag to reorder). Each shows only its description and its current phase and ticket.
    - **Current phase** shows how far the project has got: the last phase in which any ticket has moved past Todo, or the next phase once that one's QA is Done. Reopening an earlier phase (adding a ticket after its QA was Done) does not move it back.
-   - **Current ticket** is the first unfinished ticket of the current phase in time order (earliest planned start, ties broken by ticket order). If the current phase has nothing unfinished, it falls back to the earliest unfinished ticket in any phase.
+   - **Current ticket** is the first unfinished ticket of the current phase in time order (earliest planned start, ties broken by which ticket was created first). If the current phase has nothing unfinished, it falls back to the earliest unfinished ticket in any phase.
    - **+** adds a project in one of two ways; new projects go to the top:
      - **Open existing folder**: pick a folder already on my Mac. If it belonged to a removed project, that project comes back instead. If it already belongs to a project on the home page, Tickie says so and adds nothing.
      - **New empty folder**: enter a name and description, and pick where the folder goes each time; Tickie creates the folder.
@@ -168,7 +168,7 @@ Layer by layer: Project → Phase → Ticket → Test case / Status history, eac
 | Title, description | Planning agent or me |
 | Labels | Optional tags for grouping and filtering (e.g. `backend`, `ui`); set by the planning agent or me. Stored in their own table, since a ticket can have several labels |
 | Assigned agent | The AI tool that does the work (e.g. Claude Code, Codex), or **Manual** when I do it myself; starts as the project's default agent and I can change it at any time (see rule 6) |
-| Phase, order | Planned by the planning agent, approved by me |
+| Phase | Planned by the planning agent, approved by me. Tickets have no order of their own: they are listed by planned start, and ties go to the ticket created first |
 | Planned start, estimated hours | Estimated by the planning agent, approved by me (including time waiting on me). Empty on tickets I open by hand, since nobody estimated them |
 | Current status | Updated by the system as the flow progresses |
 | Created at | Recorded automatically when the ticket is opened |

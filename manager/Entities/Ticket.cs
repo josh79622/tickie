@@ -7,7 +7,6 @@ public class Ticket
     public required string Description { get; set; }
     public required int PhaseId { get; set; }
     public required TicketType Type { get; set; }
-    public required int Order { get; set; }
     public DateTime? PlannedStart { get; set; }
     public double? EstimatedHours { get; set; }
     public required string AssignedAgent { get; set; }
