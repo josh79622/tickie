@@ -45,6 +45,7 @@ I finalize everything. Agents produce first drafts and do the work, and hand thi
 5. The planning agent discusses direction with me in chat → I approve → it produces a brief or agents.md. Planning work does **not** get tickets.
    - The **IT supervisor agent** is for mid-project trouble: when a bug or a hard problem comes up, I talk it through with it in chat and it works out how to handle it (for example, a replacement ticket). It only **proposes**: nothing changes until I approve, just like planning. Like planning, this happens in chat and doesn't get tickets. It also handles QA's Analyzing step and can be called in from Needs decision.
 6. Tickets are units of work for agents. There are four ticket types: **Design**, **Build**, **Debug** and **QA** (Quality Assurance). I can open Design, Build and Debug tickets myself; QA tickets are never opened by hand (see below).
+   - A ticket's assigned agent can be **Manual**: I do all of its AI jobs myself (drafting test cases, writing test code, writing the code), e.g. when I'm out of AI quota. I can switch a ticket between Manual and an AI tool at any time. Switching while an agent is working stops it immediately; the other side continues from the latest git commit, and the switch is recorded in the status history (same from and to status, with a note).
 7. A Design ticket has the design agent build a demo; I decide whether to adopt it. Adopting it opens the Build tickets that implement it, with the Design ticket as their prerequisite.
 8. Test cases for Build, Debug and QA tickets: AI writes a first draft in plain language → I review, add and remove → they're locked. A separate **test agent** then turns them into test code → I review → it's locked. The coding agent can read both but change neither; I can always change them.
 9. When coding fails **3 times** in a row, it stops. The agent attaches its assessment without categorizing it; the final call is always mine.
@@ -148,6 +149,7 @@ Layer by layer: Project → Phase → Ticket → Test case / Status history, eac
 | Created at | Recorded automatically when the project is added |
 | Baseline frozen at | Recorded automatically when the plan is approved |
 | Sort order | Set by me by dragging on the home page |
+| Default agent | Copied from the global default (see "Settings") when the project is added; I can change it per project. Changing the global default later doesn't change existing projects |
 | Removed at | Set when I remove the project from the home page; cleared when it's restored |
 | Current phase and ticket | Not stored; derived from ticket statuses and order |
 
@@ -165,7 +167,7 @@ Layer by layer: Project → Phase → Ticket → Test case / Status history, eac
 | --- | --- |
 | Title, description | Planning agent or me |
 | Labels | Optional tags for grouping and filtering (e.g. `backend`, `ui`); set by the planning agent or me. Stored in their own table, since a ticket can have several labels |
-| Assigned agent | The AI tool that does the work (e.g. Claude Code, Codex); set when the ticket is opened |
+| Assigned agent | The AI tool that does the work (e.g. Claude Code, Codex), or **Manual** when I do it myself; starts as the project's default agent and I can change it at any time (see rule 6) |
 | Phase, order | Planned by the planning agent, approved by me |
 | Planned start, estimated hours | Estimated by the planning agent, approved by me (including time waiting on me). Empty on tickets I open by hand, since nobody estimated them |
 | Current status | Updated by the system as the flow progresses |
@@ -176,6 +178,14 @@ Layer by layer: Project → Phase → Ticket → Test case / Status history, eac
 | Actual start, actual end | Not stored; taken from the status history (first move out of Todo, and reaching an end state) |
 | Agent running | Not stored; reported live by the background manager |
 | Waiting on me | Not stored; derived from status and whether an agent is running (see "Ticket status flows") |
+
+### Settings
+
+One row of app-wide settings.
+
+| Field | Source |
+| --- | --- |
+| Default agent | Set on first launch to the first agent tool found on the Mac, or **Manual** if none is found; I can change it. Copied into each new project |
 
 ### Test case
 
@@ -235,6 +245,7 @@ The UI and the background manager are two separate programs that talk through a 
 
 ### Still open
 
+- Which buttons move a Manual ticket through the steps an agent would normally finish (e.g. Working → Testing).
 - Whether removing a project should stop agents still running on it.
 - Whether "Needs decision" and the other status names above are final.
 - Who drafts the Build tickets when a Design ticket is adopted (the planning agent, the design agent, or me).

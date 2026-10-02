@@ -44,10 +44,15 @@ public class TickieDbContext : DbContext
         modelBuilder.Entity<Ticket>()
             .Property(t => t.Status)
             .HasConversion<string>();
+
+        modelBuilder.Entity<UserSettings>()
+            .Property(s => s.Id)
+            .ValueGeneratedNever();
     }
 
     public DbSet<Project> Projects { get; set; }
     public DbSet<Phase> Phases { get; set; }
 
     public DbSet<Ticket> Tickets { get; set; }
+    public DbSet<UserSettings> UserSettings { get; set; }
 }

@@ -36,7 +36,8 @@ The full product rules, status flow, data structures and technical decisions liv
   - `PlannedStart` and `EstimatedHours` are nullable: tickets opened by hand have no estimate and go last in a phase's list.
   - `AssignedAgent` is a required string; the manager will accept only agent tools it detects on the machine.
   - `(PhaseId, Order)` is unique, with a foreign key to `Phase`. "Is unplanned" isn't stored: it's `CreatedAt` > the project's `BaselineFrozenAt`. The brief's "source ticket" was dropped.
-- Next: creating a phase must also create its QA ticket in the same transaction (brief rule 11), then the Ticket endpoints.
+- Default agents (decisions.md entries 13–17): a ticket's agent can be **Manual** (I do the work myself, e.g. when out of AI quota; switchable at any time). `Entities/UserSettings.cs` holds the global `DefaultAgent` in one row with `Id = 1` (`ValueGeneratedNever()`); `Program.cs` creates that row at startup inside a `CreateScope()` block if it's missing, currently always with `"Manual"`.
+- Next, in order: `Project.DefaultAgent` (required, copied from `UserSettings` when a project is added); creating a phase also creates its QA ticket in the same transaction (title filled in by the manager, optional `QaDescription` on `CreatePhaseRequest`, agent = the project's default); then the Ticket endpoints. Later: replace `"Manual"` at startup with detection of installed agent tools.
 - Frontend leftovers once the UI uses the real API: rename task → ticket, `tagline` → `description`, statuses to American spelling, drop `sourceTaskId`, and drop `removedAt` from the `Project` type.
 - Known leftovers for real frontend work (not bugs in the design):
   - Mock task 3 ("Project page") is a Done Build task with no test cases, which the rules don't allow; add some.

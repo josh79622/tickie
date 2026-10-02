@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Tickie.Manager.Data;
+using Tickie.Manager.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,23 @@ builder.Services.AddDbContext<TickieDbContext>(
 );
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TickieDbContext>();
+
+    var setting = db.UserSettings.Find(1);
+    if (setting == null)
+    {
+        var newSetting = new UserSettings
+        {
+            Id = 1,
+            DefaultAgent = "Manual"
+        };
+        db.UserSettings.Add(newSetting);
+        db.SaveChanges();
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
