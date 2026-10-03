@@ -215,6 +215,7 @@ Save the name as text (`"Build"`). In `OnModelCreating`: `.HasConversion<string>
 
 - **Adding a new value can't break old rows.** Example: a Build ticket is saved as `1`. Later I add `Research` after `Design`. Now `Research` is 1 and `Build` is 2. The old row still says `1`, so it silently becomes a Research ticket. No error. With text, the row says `"Build"` and stays Build.
 - **I can read it.** When I look in the database with `sqlite3`, I see `Build`, not `1`.
+- **Same in JSON.** Saving as text in the database doesn't change what the API sends. By default ASP.NET Core writes enums as numbers in JSON (`"type":3`). So `Program.cs` adds `JsonStringEnumConverter` to `AddControllers().AddJsonOptions(...)`, and the API sends `"type":"QA"` too. It works both ways: requests can send `"QA"` as well.
 
 ### Downside
 
@@ -579,3 +580,39 @@ Remove `Order` from Ticket, along with its unique `(PhaseId, Order)` index. A ph
 ### Other options I said no to
 
 - **Keep `Order` and give QA the last number:** extra work for a field that doesn't change what I see.
+
+---
+
+## 19. Ticket has no ProjectId; find a project's tickets through its phases
+
+*Date: 2026-10-03 · Area: data model + queries · Related: `GET /projects/{projectId}/tickets`*
+
+### Question
+
+To list all tickets in a project, the code has to go Ticket → Phase → Project, because a ticket only stores `PhaseId`. Should Ticket also store `ProjectId` directly, to make this easier?
+
+### Decision
+
+No. Get the project's tickets in two queries:
+
+1. Get the Ids of all phases in the project (e.g. `[4, 5, 6]`).
+2. Get all tickets whose `PhaseId` is in that list (SQL `IN (...)`).
+
+### Why
+
+- **One fact, one place.** The phase already says which project it's in. If Ticket stored `ProjectId` too, the two could disagree (ticket says project 2, its phase is in project 1), and nothing would stop it. Like writing your city on every page of a notebook when it's already on the cover.
+- **It's always two queries, not one per phase.** Step 1 returns all phase Ids at once, and step 2 checks the whole list at once. 1 phase or 100 phases, still two queries.
+- **Tiny data.** A local SQLite database with hundreds of tickets: a few milliseconds.
+
+### What real projects usually do
+
+- Start **normalized** (no copies). Only add a copy (**denormalize**) when a query is measured to be too slow, and then add code or rules to keep the copies in sync.
+- Exception: Jira issues store their project directly, because an issue can exist **without** a sprint (backlog). There, project isn't a copy; it's the only link. If Tickie ever allows tickets with no phase, `ProjectId` would become a real field.
+
+### Downside
+
+- Listing a project's tickets needs a step through `Phases`.
+
+### Other options I said no to
+
+- **Store `ProjectId` on Ticket:** simpler query, but two copies of the same fact that can disagree.

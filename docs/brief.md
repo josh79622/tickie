@@ -245,6 +245,7 @@ The UI and the background manager are two separate programs that talk through a 
 
 ### Still open
 
+- Whether I can drag a ticket from one phase to another (and what happens to the QA tickets of both phases).
 - Which buttons move a Manual ticket through the steps an agent would normally finish (e.g. Working → Testing).
 - Whether removing a project should stop agents still running on it.
 - Whether "Needs decision" and the other status names above are final.
