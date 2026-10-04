@@ -616,3 +616,28 @@ No. Get the project's tickets in two queries:
 ### Other options I said no to
 
 - **Store `ProjectId` on Ticket:** simpler query, but two copies of the same fact that can disagree.
+
+---
+
+## 20. Reopening QA needs no transaction: one save is already all-or-nothing
+
+*Date: 2026-10-04 · Area: manager API · Related: `brief.md` "QA tickets" (Done → Waiting for dev)*
+
+### Question
+
+When I open a ticket in a phase whose QA ticket is Done, the QA ticket goes back to Waiting for dev. That's two changes: add the new ticket, and change the QA ticket. Creating a phase needed a transaction to save two things together. Does this need one too?
+
+### Decision
+
+No. Both changes go into **one** `SaveChangesAsync()` call.
+
+### Why
+
+- **One `SaveChangesAsync()` is already all-or-nothing.** EF Core wraps every save in a transaction by itself. If any change fails, none of them are saved.
+- **Creating a phase was different.** The QA ticket needed the phase's `Id`, and the `Id` only exists after the phase is saved. So that needed **two** saves, and two saves need a transaction around them to be all-or-nothing.
+- Rule of thumb: one save → no transaction needed. Several saves that must succeed together → wrap them in a transaction.
+
+### Also
+
+- The QA ticket can be missing (phases inserted by hand before QA tickets existed), so the code checks `qaTicket != null` first.
+- The brief also wants a status history entry saying which ticket was added. That waits until the status history table exists.

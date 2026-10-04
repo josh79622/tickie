@@ -69,6 +69,14 @@ public class TicketsController : ControllerBase
             return BadRequest(new { message = "QA tickets are created with their phase." });
         }
 
+        var qaTicket = await _dbContext.Tickets
+            .FirstOrDefaultAsync(t => t.Type == TicketType.QA && t.PhaseId == request.PhaseId);
+
+        if (qaTicket != null && qaTicket.Status == TicketStatus.Done)
+        {
+            qaTicket.Status = TicketStatus.WaitingForDev;
+        }
+
         var ticket = new Ticket
         {
             PhaseId = request.PhaseId,
