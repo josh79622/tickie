@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tickie.Manager.Data;
@@ -42,9 +43,9 @@ public class PhasesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PhaseResponse>> Create(int projectId, CreatePhaseRequest request)
     {
-        var projectExists = await _dbContext.Projects
-            .AnyAsync(p => p.Id == projectId && p.RemovedAt == null);
-        if (!projectExists)
+        var project = await _dbContext.Projects
+            .FirstOrDefaultAsync(p => p.Id == projectId && p.RemovedAt == null);
+        if (project == null)
         {
             return NotFound();
         }
@@ -70,8 +71,23 @@ public class PhasesController : ControllerBase
             Order = theLastPhaseOrder + 1
         };
 
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
         _dbContext.Phases.Add(newPhase);
         await _dbContext.SaveChangesAsync();
+
+        var newTicket = new Ticket
+        {
+            PhaseId = newPhase.Id,
+            Type = TicketType.QA,
+            Title = $"QA {newPhase.Name}",
+            Description = request.QaDescription ?? $"End-to-end tests for {newPhase.Name}.",
+            AssignedAgent = project.DefaultAgent,
+        };
+
+        _dbContext.Tickets.Add(newTicket);
+        await _dbContext.SaveChangesAsync();
+
+        await transaction.CommitAsync();
 
         return StatusCode(201, new PhaseResponse(
             newPhase.Id,

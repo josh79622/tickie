@@ -10,4 +10,5 @@ public class Project
     public DateTime CreatedAt { get; private init; } = DateTime.UtcNow;
     public DateTime? BaselineFrozenAt { get; set; }
     public DateTime? RemovedAt { get; set; }
+    public required string DefaultAgent { get; set; }
 }
