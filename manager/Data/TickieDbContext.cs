@@ -44,6 +44,32 @@ public class TickieDbContext : DbContext
         modelBuilder.Entity<UserSettings>()
             .Property(s => s.Id)
             .ValueGeneratedNever();
+
+        modelBuilder.Entity<StatusChange>()
+            .Property(sc => sc.FromStatus)
+            .HasConversion<string>();
+        
+        modelBuilder.Entity<StatusChange>()
+            .Property(sc => sc.ToStatus)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<StatusChange>()
+            .HasOne<Ticket>()
+            .WithMany()
+            .HasForeignKey(sc => sc.TicketId);
+        
+        modelBuilder.Entity<StatusChangeTicket>()
+            .HasKey(sct => new { sct.StatusChangeId, sct.TicketId });
+
+        modelBuilder.Entity<StatusChangeTicket>()
+            .HasOne<StatusChange>()
+            .WithMany()
+            .HasForeignKey(sct => sct.StatusChangeId);
+
+        modelBuilder.Entity<StatusChangeTicket>()
+            .HasOne<Ticket>()
+            .WithMany()
+            .HasForeignKey(sct => sct.TicketId);
     }
 
     public DbSet<Project> Projects { get; set; }
@@ -51,4 +77,6 @@ public class TickieDbContext : DbContext
 
     public DbSet<Ticket> Tickets { get; set; }
     public DbSet<UserSettings> UserSettings { get; set; }
+    public DbSet<StatusChange> StatusChanges { get; set; }
+    public DbSet<StatusChangeTicket> StatusChangeTickets { get; set; }
 }

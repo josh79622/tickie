@@ -14,6 +14,7 @@ I built this with an AI tutor, but I didn't just accept what it suggested. These
 - **Entry 15:** I pointed out that the "existing projects" we were worrying about were only test rows. That changed the question to "what does a brand-new install need?"
 - **Entry 16:** I came up with the **Manual** option, so work can go on when I'm out of AI quota.
 - **Entry 18:** I noticed the QA ticket would get `Order = 1` even though QA runs last. Following that up showed `Order` didn't do anything useful, so we removed it.
+- **Entry 22:** the suggestion was to name the added ticket by its title in a text note. I asked "what if the title changes?" and "what if I want to click it?", which turned the note into a real link. Then I asked whether one link is enough; several Debug tickets can reopen QA at once, so it became a link table.
 
 In one sentence: *"I used AI to move faster, but I kept asking why each piece existed, and several fields and rules changed or disappeared because of that."*
 
@@ -641,3 +642,84 @@ No. Both changes go into **one** `SaveChangesAsync()` call.
 
 - The QA ticket can be missing (phases inserted by hand before QA tickets existed), so the code checks `qaTicket != null` first.
 - The brief also wants a status history entry saying which ticket was added. That waits until the status history table exists.
+
+---
+
+## 21. The status history only records real status changes
+
+*Date: 2026-10-05 · Area: data model · Related: `brief.md` "Status history"*
+
+### Questions
+
+1. Should creating a ticket write a "created" row (nothing → Todo)?
+2. Should the history also record other edits, like a new title or a changed estimate?
+
+### Decision
+
+- **No "created" row.** The screen shows "Created 5 Oct 2026" from `Ticket.CreatedAt`, then the history rows after it. Because every row is a real change, `FromStatus` always has a value.
+- **Status changes only**, with typed `FromStatus` and `ToStatus` columns and an optional note. A general edit log is a separate idea, left open in the brief.
+
+### Why
+
+- **One fact, one place.** A "created" row would store the same time as `Ticket.CreatedAt`, and the two could disagree. Keeping `CreatedAt` on the ticket also keeps "is unplanned" a simple check on the ticket itself.
+- **We store data; the screen makes the words.** The row holds plain values. The UI turns them into "Created…" or "Moved to Testing…".
+- **Every use in the brief is about the status journey.** I listed where the history is written and read:
+  - **Written** on every status change, and on "same status" rows with a note: resuming after the laptop wakes, Retry with note, Design change requests, Fix on QA, QA reopened by a new ticket, switching to or from Manual.
+  - **Read** for actual start and end times, for feedback to the planning agent's estimates, as instructions for the agent (my notes), and for the ticket's timeline.
+  - None of these need "the title changed" or "the estimate went from 3 to 5".
+- **Typed columns are easy to calculate with.** A general log usually stores values as text (`Old = "3"`, `New = "5"`), which is fine to read but awkward to compare and sort.
+
+### Other options I said no to
+
+- **Write a "created" row and remove `Ticket.CreatedAt`:** one less column, but "is unplanned" would need to search the history.
+- **One general log for every field:** answers "who edited what?", which nothing in the brief asks yet.
+
+---
+
+## 22. A status change links to the tickets that caused it, through a link table
+
+*Date: 2026-10-05 · Area: data model · Related: `brief.md` "QA tickets" (Done → Waiting for dev, Analyzing → Waiting for dev)*
+
+### How it came up
+
+I questioned the design myself, twice (see below).
+
+### Question
+
+When a new ticket reopens a Done QA ticket, the QA ticket's history should say **which** ticket was added. How do we record that?
+
+### Decision
+
+- A **link table**, `StatusChangeTickets`, with one row per (status change, ticket) pair: `StatusChangeId` and `TicketId`.
+- Its key is the **pair** itself (a composite key, set with `HasKey(sct => new { sct.StatusChangeId, sct.TicketId })`), so the same link can't be saved twice. No separate `Id`. Like a theater seat: "row 5, seat 12" instead of its own number.
+- Both columns are foreign keys, so every link points to a real status change and a real ticket.
+- Opening a ticket that reopens QA does **three saves inside one transaction**: save the new ticket (now it has an Id), save the QA status change (now it has an Id), save the link. Then commit.
+
+Example: QA ticket 1 reopened by Debug tickets 3, 4 and 5:
+
+| StatusChanges: Id | TicketId | From → To |
+| --- | --- | --- |
+| 10 | 1 | Analyzing → WaitingForDev |
+
+| StatusChangeTickets: StatusChangeId | TicketId |
+| --- | --- |
+| 10 | 3 |
+| 10 | 4 |
+| 10 | 5 |
+
+### Why
+
+- **Text notes go stale and can't be clicked.** The first idea was a note like "Ticket 'Logout button' was added". I asked: *what if the title changes?* and *what if I want to click it to open the ticket?* An Id fixes both: the screen looks up the current title and links to the ticket.
+- **One change can have several causes.** Then I asked whether one Id is enough. It isn't always: when I approve the IT supervisor's Debug tickets, several open at once and QA moves once. A single column holds one value, so several links need a table.
+- **Why not a list in one column** (`"[3,4,5]"`)? SQLite would store it as text. The database can't check the numbers inside, so a link to a ticket that doesn't exist would be saved without complaint. It's also harder to search ("which changes involve ticket 4?").
+- **Why a transaction:** the new ticket and the status change only get their Ids when saved, so it takes several saves. They must all succeed or all be undone.
+
+### Downside
+
+- Three saves instead of one, and an extra table to read when showing the timeline.
+
+### Other options I said no to
+
+- **Title in a text note:** goes stale on rename, can't be clicked.
+- **One `RelatedTicketId` column:** clickable, but only one cause per change.
+- **A list of Ids in one column:** no foreign key checks.

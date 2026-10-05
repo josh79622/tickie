@@ -72,9 +72,11 @@ public class TicketsController : ControllerBase
         var qaTicket = await _dbContext.Tickets
             .FirstOrDefaultAsync(t => t.Type == TicketType.QA && t.PhaseId == request.PhaseId);
 
+        var qaReopened = false;
         if (qaTicket != null && qaTicket.Status == TicketStatus.Done)
         {
             qaTicket.Status = TicketStatus.WaitingForDev;
+            qaReopened = true;
         }
 
         var ticket = new Ticket
@@ -88,9 +90,32 @@ public class TicketsController : ControllerBase
             AssignedAgent = request.AssignedAgent ?? project.DefaultAgent
         };
 
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
         _dbContext.Tickets.Add(ticket);
         await _dbContext.SaveChangesAsync();
-        
+
+        if (qaReopened && qaTicket != null)
+        {
+            var statusChange = new StatusChange
+            {
+                TicketId = qaTicket.Id,
+                FromStatus = TicketStatus.Done,
+                ToStatus = TicketStatus.WaitingForDev
+            };
+
+            _dbContext.StatusChanges.Add(statusChange);
+            await _dbContext.SaveChangesAsync();
+
+            _dbContext.StatusChangeTickets.Add(new StatusChangeTicket
+            {
+                StatusChangeId = statusChange.Id,
+                TicketId = ticket.Id
+            });
+            await _dbContext.SaveChangesAsync();
+        }
+
+
+        await transaction.CommitAsync();
         return StatusCode(201, ToResponse(ticket, project.BaselineFrozenAt));
     }
 
