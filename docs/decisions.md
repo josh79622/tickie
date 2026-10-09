@@ -848,3 +848,36 @@ A ticket moves through its flow (Todo → Test cases → … → Done). What sho
 - **409, not 400:** the request itself is fine; the ticket's current situation blocks it. The same request will work once the prerequisites finish. Same reason a folder already in use returns 409.
 - **Canceling isn't starting.** You should be able to drop a ticket that's still waiting.
 - **Only leaving Todo is checked:** the brief says the ticket "can't start". Once started, its prerequisites were already finished.
+
+---
+
+## 27. QA starts Running by itself when the rest of its phase is finished
+
+*Date: 2026-10-09 · Area: manager API · Related: `brief.md` "QA tickets" (Waiting for dev → Running)*
+
+### Question
+
+The brief says a QA ticket waits in Waiting for dev until every other ticket in its phase is finished, then moves to Running on its own. When does the manager check that, and how does it record it?
+
+### Decision
+
+- **Two moments** inside `PATCH .../tickets/{id}/status`, after the main move is saved:
+  1. **Another ticket in the phase finishes** (reaches Done, Canceled, Adopted or Rejected) while QA is Waiting for dev.
+  2. **QA itself reaches Waiting for dev** after everything else already finished.
+- A helper, `AreOtherTicketsFinished(phaseId)`, answers "is there no unfinished non-QA ticket left in this phase?" with one `AnyAsync` query. Both moments use it.
+- If ready, QA moves Waiting for dev → Running, with a status history row (note: "All other tickets in the phase are finished."). In moment 1, a `StatusChangeTickets` link points to the ticket whose finish started QA.
+- Everything happens in one transaction, because it takes several saves.
+
+Example: phase 6 has QA (waiting) and Build tickets A and B. A is Done, B is Working. When B moves to Done, QA moves to Running in the same request, and its history says B caused it.
+
+### Why
+
+- **Both moments are needed.** If Build tickets finish first, the QA ticket arrives at Waiting for dev with nothing to wait for. If QA arrives first, the last Build ticket to finish has to start it.
+- **Check after saving the main move,** because the helper asks the database, which must already see the new status.
+- **One helper, written once,** so both moments use exactly the same definition of "everything else is finished" (the rulebook's finished list).
+- **Link the cause,** so the screen can show "QA started because 'Login screen' finished", using the same link table as reopening QA.
+
+### Downside
+
+- A phase with no other tickets at all counts as "everything finished", so its QA goes straight to Running once its tests are locked.
+- Running only changes the status. Actually starting the QA agent comes later, with agent runs.

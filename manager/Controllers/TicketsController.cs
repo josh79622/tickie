@@ -252,8 +252,51 @@ public class TicketsController : ControllerBase
         };
         ticket.Status = request.ToStatus;
 
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
         _dbContext.StatusChanges.Add(statusChange);
         await _dbContext.SaveChangesAsync();
+
+        Ticket? qaToStart = null;
+        if (ticket.Type == TicketType.QA && ticket.Status == TicketStatus.WaitingForDev)
+        {
+            qaToStart = ticket;
+        }
+        else if (ticket.Type != TicketType.QA && TicketFlow.FinishedStatuses.Contains(ticket.Status))
+        {
+            var qaTicket = await _dbContext.Tickets
+                .FirstOrDefaultAsync(t => t.PhaseId == ticket.PhaseId && t.Type == TicketType.QA);
+
+            if (qaTicket != null && qaTicket.Status == TicketStatus.WaitingForDev)
+            {
+                qaToStart = qaTicket;
+            }
+        }
+
+        if (qaToStart != null && await AreOtherTicketsFinished(ticket.PhaseId))
+        {
+            var qaChange = new StatusChange
+            {
+                TicketId = qaToStart.Id,
+                FromStatus = TicketStatus.WaitingForDev,
+                ToStatus = TicketStatus.Running,
+                Note = "All other tickets in the phase are finished."
+            };
+            qaToStart.Status = TicketStatus.Running;
+            _dbContext.StatusChanges.Add(qaChange);
+            await _dbContext.SaveChangesAsync();
+
+            if (qaToStart.Id != ticket.Id)
+            {
+                _dbContext.StatusChangeTickets.Add(new StatusChangeTicket
+                {
+                    StatusChangeId = qaChange.Id,
+                    TicketId = ticket.Id
+                });
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+
+        await transaction.CommitAsync();
 
         return NoContent();
     }
@@ -274,5 +317,15 @@ public class TicketsController : ControllerBase
             baselineFrozenAt != null && t.CreatedAt > baselineFrozenAt,
             labels
         );
+    }
+
+    private async Task<bool> AreOtherTicketsFinished(int phaseId)
+    {
+        var anyUnfinished = await _dbContext.Tickets
+            .AnyAsync(t => t.PhaseId == phaseId
+                && t.Type != TicketType.QA
+                && !TicketFlow.FinishedStatuses.Contains(t.Status));
+
+        return !anyUnfinished;
     }
 }
