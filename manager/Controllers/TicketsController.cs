@@ -7,6 +7,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Net;
+using System.Linq;
 
 namespace Tickie.Manager.Controllers;
 
@@ -69,12 +70,31 @@ public class TicketsController : ControllerBase
             return BadRequest(new { message = "QA tickets are created with their phase." });
         }
 
+        var prerequisiteIds = request.PrerequisiteTicketIds?.Distinct().ToList() ?? new List<int>();
+        if (prerequisiteIds.Count > 0)
+        {
+            var phaseIds = await _dbContext.Phases
+                .Where(ph => ph.ProjectId == projectId)
+                .Select(ph => ph.Id)
+                .ToListAsync();
+
+            var foundCount = await _dbContext.Tickets
+                .CountAsync(t => prerequisiteIds.Contains(t.Id) && phaseIds.Contains(t.PhaseId));
+            
+            if (foundCount != prerequisiteIds.Count)
+            {
+                return BadRequest(new { message = "Prerequisites must be tickets in this project." });
+            }
+        }
+
         var qaTicket = await _dbContext.Tickets
             .FirstOrDefaultAsync(t => t.Type == TicketType.QA && t.PhaseId == request.PhaseId);
 
+        var qaReopened = false;
         if (qaTicket != null && qaTicket.Status == TicketStatus.Done)
         {
             qaTicket.Status = TicketStatus.WaitingForDev;
+            qaReopened = true;
         }
 
         var ticket = new Ticket
@@ -88,9 +108,42 @@ public class TicketsController : ControllerBase
             AssignedAgent = request.AssignedAgent ?? project.DefaultAgent
         };
 
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync();
         _dbContext.Tickets.Add(ticket);
         await _dbContext.SaveChangesAsync();
-        
+
+        foreach (var prerequisiteId in prerequisiteIds)
+        {
+            _dbContext.TicketDependencies.Add(new TicketDependency
+            {
+                TicketId = ticket.Id,
+                PrerequisiteTicketId = prerequisiteId
+            });
+        }
+        await _dbContext.SaveChangesAsync();
+
+        if (qaReopened && qaTicket != null)
+        {
+            var statusChange = new StatusChange
+            {
+                TicketId = qaTicket.Id,
+                FromStatus = TicketStatus.Done,
+                ToStatus = TicketStatus.WaitingForDev
+            };
+
+            _dbContext.StatusChanges.Add(statusChange);
+            await _dbContext.SaveChangesAsync();
+
+            _dbContext.StatusChangeTickets.Add(new StatusChangeTicket
+            {
+                StatusChangeId = statusChange.Id,
+                TicketId = ticket.Id
+            });
+            await _dbContext.SaveChangesAsync();
+        }
+
+
+        await transaction.CommitAsync();
         return StatusCode(201, ToResponse(ticket, project.BaselineFrozenAt));
     }
 

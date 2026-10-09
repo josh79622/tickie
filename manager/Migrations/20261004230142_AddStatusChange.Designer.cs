@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Tickie.Manager.Data;
 
@@ -10,9 +11,11 @@ using Tickie.Manager.Data;
 namespace Tickie.Manager.Migrations
 {
     [DbContext(typeof(TickieDbContext))]
-    partial class TickieDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261004230142_AddStatusChange")]
+    partial class AddStatusChange
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
@@ -115,21 +118,6 @@ namespace Tickie.Manager.Migrations
                     b.ToTable("StatusChanges");
                 });
 
-            modelBuilder.Entity("Tickie.Manager.Entities.StatusChangeTicket", b =>
-                {
-                    b.Property<int>("StatusChangeId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("TicketId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("StatusChangeId", "TicketId");
-
-                    b.HasIndex("TicketId");
-
-                    b.ToTable("StatusChangeTickets");
-                });
-
             modelBuilder.Entity("Tickie.Manager.Entities.Ticket", b =>
                 {
                     b.Property<int>("Id")
@@ -175,24 +163,6 @@ namespace Tickie.Manager.Migrations
                     b.ToTable("Tickets");
                 });
 
-            modelBuilder.Entity("Tickie.Manager.Entities.TicketDependency", b =>
-                {
-                    b.Property<int>("TicketId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("PrerequisiteTicketId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("TicketId", "PrerequisiteTicketId");
-
-                    b.HasIndex("PrerequisiteTicketId");
-
-                    b.ToTable("TicketDependencies", t =>
-                        {
-                            t.HasCheckConstraint("CK_TicketDependencies_NotSelf", "\"TicketId\" <> \"PrerequisiteTicketId\"");
-                        });
-                });
-
             modelBuilder.Entity("Tickie.Manager.Entities.UserSettings", b =>
                 {
                     b.Property<int>("Id")
@@ -225,41 +195,11 @@ namespace Tickie.Manager.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Tickie.Manager.Entities.StatusChangeTicket", b =>
-                {
-                    b.HasOne("Tickie.Manager.Entities.StatusChange", null)
-                        .WithMany()
-                        .HasForeignKey("StatusChangeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Tickie.Manager.Entities.Ticket", null)
-                        .WithMany()
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Tickie.Manager.Entities.Ticket", b =>
                 {
                     b.HasOne("Tickie.Manager.Entities.Phase", null)
                         .WithMany()
                         .HasForeignKey("PhaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Tickie.Manager.Entities.TicketDependency", b =>
-                {
-                    b.HasOne("Tickie.Manager.Entities.Ticket", null)
-                        .WithMany()
-                        .HasForeignKey("PrerequisiteTicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Tickie.Manager.Entities.Ticket", null)
-                        .WithMany()
-                        .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

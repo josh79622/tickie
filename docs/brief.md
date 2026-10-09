@@ -245,6 +245,7 @@ The UI and the background manager are two separate programs that talk through a 
 
 ### Still open
 
+- Whether to keep a general edit log (title, description, estimate changes). The status history only records status changes and their notes.
 - Whether I can drag a ticket from one phase to another (and what happens to the QA tickets of both phases).
 - Which buttons move a Manual ticket through the steps an agent would normally finish (e.g. Working → Testing).
 - Whether removing a project should stop agents still running on it.
