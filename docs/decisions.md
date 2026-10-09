@@ -758,3 +758,39 @@ A ticket can wait for other tickets (its prerequisites) before it starts. How do
 ### Other options I said no to
 
 - **Prerequisites from any project:** more flexible, but nothing in the brief needs it, and it ties separate projects together.
+
+---
+
+## 24. Labels: per project, attached by name, created automatically
+
+*Date: 2026-10-09 · Area: data model + manager API · Related: `brief.md` "Data model → Ticket" (labels)*
+
+### Question
+
+Tickets can have optional labels (like `backend` or `ui`) for grouping and filtering. Who owns a label, how does it get onto a ticket, and how does the API show it?
+
+### Decision
+
+- **Two tables.** `Labels` (`Id`, `ProjectId`, `Name`) holds the labels. `TicketLabels` is a link table (`TicketId` + `LabelId` as the key, both foreign keys).
+- **Each project has its own labels.** A unique index on `(ProjectId, Name)` stops duplicates inside a project. Two projects can both have `backend`.
+- **Attach by name, create if missing.** `CreateTicketRequest` takes an optional `Labels` list of names. The manager cleans the names (trim spaces, lowercase, drop empty ones and repeats), finds the labels the project already has, creates the missing ones, and links them all to the new ticket. All of this is inside the ticket's transaction.
+- **The API shows label names.** `TicketResponse` has `Labels` (sorted A→Z). `GET` loads the tickets first, then gets all their labels in **one** query by joining `TicketLabels` with `Labels`.
+
+### Why
+
+- **Per project:** each project is its own folder with its own kind of work. A blog might need `writing`, which makes no sense in Tickie. It also matches prerequisites, which stay inside one project.
+- **By name:** simpler for me and for agents. No separate "create a label first" step. This is how Linear and Jira work.
+- **Lowercase and trimmed:** otherwise an agent typing `Backend` would quietly create a second label next to `backend`, and filtering would miss half the tickets.
+- **`HasIndex(...).IsUnique()`, not `HasKey(...)`, for `(ProjectId, Name)`:** `HasKey` would make the pair the label's identity instead of `Id`. Then every link would have to store the name, and renaming a label would break all its links. Link tables use `HasKey` because the pair *is* their identity; `Label` has its own `Id`.
+- **One join instead of one query per ticket:** the link table only has numbers; the names are in `Labels`. A join matches `TicketLabels.LabelId` with `Labels.Id` in one query, however many tickets there are.
+
+### Downside
+
+- Labels can't be renamed, deleted or colored yet (no endpoints for that).
+- A typo creates a new label (`backnd`). Cleaning only fixes spaces and capital letters.
+
+### Other options I said no to
+
+- **One shared set of labels for all projects:** ties unrelated projects together.
+- **Create labels first, attach by Id** (like GitHub): an extra step every time.
+- **Keep capital letters as typed:** `Backend` and `backend` would become two labels.

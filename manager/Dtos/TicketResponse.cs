@@ -12,5 +12,6 @@ public record TicketResponse(
     DateTime? PlannedStart,
     double? EstimatedHours,
     string AssignedAgent,
-    bool IsUnplanned
+    bool IsUnplanned,
+    List<string> Labels
 );
