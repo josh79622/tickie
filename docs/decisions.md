@@ -15,6 +15,7 @@ I built this with an AI tutor, but I didn't just accept what it suggested. These
 - **Entry 16:** I came up with the **Manual** option, so work can go on when I'm out of AI quota.
 - **Entry 18:** I noticed the QA ticket would get `Order = 1` even though QA runs last. Following that up showed `Order` didn't do anything useful, so we removed it.
 - **Entry 22:** the suggestion was to name the added ticket by its title in a text note. I asked "what if the title changes?" and "what if I want to click it?", which turned the note into a real link. Then I asked whether one link is enough; several Debug tickets can reopen QA at once, so it became a link table.
+- **Entry 25:** in the "is this move allowed?" method, QA was the fallback for any type not checked above it. I asked why. A new ticket type would have silently used the QA rules, so now QA is checked by name, and an unknown type fails loudly.
 
 In one sentence: *"I used AI to move faster, but I kept asking why each piece existed, and several fields and rules changed or disappeared because of that."*
 
@@ -794,3 +795,56 @@ Tickets can have optional labels (like `backend` or `ui`) for grouping and filte
 - **One shared set of labels for all projects:** ties unrelated projects together.
 - **Create labels first, attach by Id** (like GitHub): an extra step every time.
 - **Keep capital letters as typed:** `Backend` and `backend` would become two labels.
+
+---
+
+## 25. One endpoint for status changes, checked against a rulebook
+
+*Date: 2026-10-09 · Area: manager API + rules · Related: `brief.md` "Ticket status flows"*
+
+### Question
+
+A ticket moves through its flow (Todo → Test cases → … → Done). What should the API look like, and where do the rules live?
+
+### Decision
+
+- **One endpoint:** `PATCH /projects/{projectId}/tickets/{id}/status` with `{ "toStatus": "...", "note": "..." }` (`ChangeStatusRequest`). It returns 204, or 404 / 400 / 409 (see below).
+- **A rulebook:** `Rules/TicketFlow.cs`, a `static class` with one set of allowed moves per flow (`BuildMoves` for Build and Debug, `DesignMoves`, `QaMoves`). Each move is a pair `(From, To)`, one arrow from the brief's flowcharts, stored in a `HashSet` so "is this move allowed?" is a fast lookup.
+- `TicketFlow.IsAllowed(type, from, to)` answers true/false. Build and Debug can also be canceled from anything that isn't finished. Design and QA can't be canceled. An unknown ticket type throws an error.
+- Each move writes a status history row in the **same save** as the status change, so no transaction is needed. The row reads `FromStatus` **before** the status changes.
+
+### Why
+
+- **Most moves are the same 4 steps** (find the ticket, check the move, change the status, write history). Only the target differs. One endpoint does those steps once, instead of about 30 near-copies.
+- **All the rules are in one readable place.** The rulebook reads like the brief's flowcharts.
+- **Real APIs do this too.** Jira moves issues with one "transitions" endpoint checked against the workflow.
+- **Fail loudly for unknown types.** At first, QA was the "everything else" case. I asked why. A new type (say `Research`) would have silently followed the QA rules. Now QA is checked by name, and anything else throws a clear error.
+
+### Downside
+
+- Moves with extra work (like Adopt, which should open Build tickets) or special inputs will need code inside this endpoint, or a special endpoint later (the "mix" option).
+- The same move can mean different things (Working → Working could be "resumed" or "switched to Manual"). For now the note says which.
+
+### Other options I said no to
+
+- **One endpoint per action** (`/start`, `/retry`, `/cancel`…): clear names, but about 30 endpoints repeating the same steps, and easy to forget a check in one.
+- **A mix** (one main endpoint plus special ones): the likely future, but nothing needs a special endpoint yet.
+
+---
+
+## 26. A ticket can't leave Todo until its prerequisites are finished
+
+*Date: 2026-10-09 · Area: manager API · Related: `brief.md` rule 10, entry 23*
+
+### Decision
+
+- **Finished** means Done, Canceled, Adopted or Rejected. The list lives in the rulebook (`TicketFlow.FinishedStatuses`), so every check uses the same definition.
+- When a ticket leaves Todo, the manager counts its prerequisites that aren't finished, by joining `TicketDependencies` with `Tickets`. If any are left, it returns **409 Conflict** with how many.
+- **Canceling is always allowed,** even while prerequisites are unfinished.
+
+### Why
+
+- **Adopted and Rejected count as finished,** because a prerequisite can be a Design ticket, and Design tickets end as Adopted or Rejected, never Done. It's the same list QA uses for "every other ticket in the phase is finished".
+- **409, not 400:** the request itself is fine; the ticket's current situation blocks it. The same request will work once the prerequisites finish. Same reason a folder already in use returns 409.
+- **Canceling isn't starting.** You should be able to drop a ticket that's still waiting.
+- **Only leaving Todo is checked:** the brief says the ticket "can't start". Once started, its prerequisites were already finished.

@@ -1,6 +1,7 @@
 using Tickie.Manager.Dtos;
 using Tickie.Manager.Entities;
 using Tickie.Manager.Data;
+using Tickie.Manager.Rules;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -195,6 +196,66 @@ public class TicketsController : ControllerBase
 
         await transaction.CommitAsync();
         return StatusCode(201, ToResponse(ticket, project.BaselineFrozenAt, ticketLabelNames));
+    }
+
+    [HttpPatch("{id}/status")]
+    public async Task<ActionResult> ChangeStatus(int projectId, int id, ChangeStatusRequest request)
+    {
+        var project = await _dbContext.Projects
+            .FirstOrDefaultAsync(p => p.Id == projectId && p.RemovedAt == null);
+
+        if (project == null)
+        {
+            return NotFound();
+        }
+
+        var phaseIds = await _dbContext.Phases
+            .Where(ph => ph.ProjectId == projectId)
+            .Select(ph => ph.Id)
+            .ToListAsync();
+
+        var ticket = await _dbContext.Tickets
+            .FirstOrDefaultAsync(t => t.Id == id && phaseIds.Contains(t.PhaseId));
+
+        if (ticket == null)
+        {
+            return NotFound(new {message = "Ticket not found in this project."});
+        }
+
+        if (!TicketFlow.IsAllowed(ticket.Type, ticket.Status, request.ToStatus))
+        {
+            return BadRequest(new { message = $"A {ticket.Type} ticket can't move from {ticket.Status} to {request.ToStatus}." });
+        }
+
+        if (ticket.Status == TicketStatus.Todo && request.ToStatus != TicketStatus.Canceled)
+        {
+            var unfinishedCount = await _dbContext.TicketDependencies
+                .Where(td => td.TicketId == ticket.Id)
+                .Join(_dbContext.Tickets,
+                    td => td.PrerequisiteTicketId,
+                    t => t.Id,
+                    (td, t) => t.Status)
+                .CountAsync(status => !TicketFlow.FinishedStatuses.Contains(status));
+
+            if (unfinishedCount > 0)
+            {
+                return Conflict(new { message = $"This ticket is waiting for {unfinishedCount} unfinished prerequisite(s)." });
+            }
+        }
+
+        var statusChange = new StatusChange
+        {
+            TicketId = ticket.Id,
+            FromStatus = ticket.Status,
+            ToStatus = request.ToStatus,
+            Note = request.Note
+        };
+        ticket.Status = request.ToStatus;
+
+        _dbContext.StatusChanges.Add(statusChange);
+        await _dbContext.SaveChangesAsync();
+
+        return NoContent();
     }
 
 

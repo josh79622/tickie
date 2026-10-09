@@ -49,7 +49,7 @@ I finalize everything. Agents produce first drafts and do the work, and hand thi
 7. A Design ticket has the design agent build a demo; I decide whether to adopt it. Adopting it opens the Build tickets that implement it, with the Design ticket as their prerequisite.
 8. Test cases for Build, Debug and QA tickets: AI writes a first draft in plain language → I review, add and remove → they're locked. A separate **test agent** then turns them into test code → I review → it's locked. The coding agent can read both but change neither; I can always change them.
 9. When coding fails **3 times** in a row, it stops. The agent attaches its assessment without categorizing it; the final call is always mine.
-10. When opening a ticket, list its prerequisite tickets (there can be several). Until they're done or canceled, the ticket can't start and its tests can't be written. Tickets with no dependency between them can run in parallel.
+10. When opening a ticket, list its prerequisite tickets (there can be several). Until they're finished (Done, Canceled, Adopted or Rejected), the ticket can't leave Todo and its tests can't be written. Tickets with no dependency between them can run in parallel.
 11. QA E2E (End-to-End) tests run at the end of each phase, not once per ticket. Each phase has exactly **one** QA ticket, created by the planning agent as part of the plan.
 12. Whether QA passes or fails, I make the call. Choosing Fix has the IT supervisor agent trace the problem and propose **Debug tickets** (with draft test cases attached), which follow exactly the same flow as Build tickets.
 
