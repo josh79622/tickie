@@ -11,5 +11,6 @@ public record CreateTicketRequest(
     DateTime? PlannedStart,
     double? EstimatedHours,
     string? AssignedAgent = null,
-    List<int>? PrerequisiteTicketIds = null
+    List<int>? PrerequisiteTicketIds = null,
+    List<string>? Labels = null
 );

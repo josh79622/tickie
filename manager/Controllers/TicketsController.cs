@@ -37,14 +37,29 @@ public class TicketsController : ControllerBase
             .Select(ph => ph.Id)
             .ToListAsync();
 
-
-        return await _dbContext.Tickets
+        var tickets = await _dbContext.Tickets
             .Where(t => phaseIds.Contains(t.PhaseId))
             .OrderBy(t => t.PlannedStart == null)
             .ThenBy(t => t.PlannedStart)
             .ThenBy(t => t.Id)
-            .Select(t => ToResponse(t, project.BaselineFrozenAt))
             .ToListAsync();
+
+        var ticketIds = tickets.Select(t => t.Id).ToList();
+        var labelRows = await _dbContext.TicketLabels
+            .Where(tl => ticketIds.Contains(tl.TicketId))
+            .Join(_dbContext.Labels,
+                tl => tl.LabelId,
+                l => l.Id,
+                (tl, l) => new { tl.TicketId, l.Name })
+            .ToArrayAsync();
+
+        return tickets
+            .Select(t => ToResponse(
+                t, 
+                project.BaselineFrozenAt, 
+                labelRows.Where(r => r.TicketId == t.Id).Select(r => r.Name).OrderBy(name => name).ToList()
+            ))
+            .ToList();
     }
 
     [HttpPost]
@@ -87,6 +102,12 @@ public class TicketsController : ControllerBase
             }
         }
 
+        var labelNames = request.Labels?
+            .Select(name => name.Trim().ToLowerInvariant())
+            .Where(name => name != "")
+            .Distinct()
+            .ToList() ?? new List<string>();
+
         var qaTicket = await _dbContext.Tickets
             .FirstOrDefaultAsync(t => t.Type == TicketType.QA && t.PhaseId == request.PhaseId);
 
@@ -110,6 +131,31 @@ public class TicketsController : ControllerBase
 
         await using var transaction = await _dbContext.Database.BeginTransactionAsync();
         _dbContext.Tickets.Add(ticket);
+        await _dbContext.SaveChangesAsync();
+
+        var existingLabels = await _dbContext.Labels
+            .Where(l => l.ProjectId == projectId && labelNames.Contains(l.Name.ToLower()))
+            .ToListAsync();
+
+        var existingLabelNames = existingLabels
+            .Select(l => l.Name).ToList();
+
+        var newLabels = labelNames
+            .Where(name => !existingLabelNames.Contains(name))
+            .Select(name => new Label { ProjectId = projectId, Name = name})
+            .ToList();
+
+        _dbContext.Labels.AddRange(newLabels);
+        await _dbContext.SaveChangesAsync();
+
+        foreach (var label in existingLabels.Concat(newLabels))
+        {
+            _dbContext.TicketLabels.Add(new TicketLabel
+            {
+                TicketId = ticket.Id,
+                LabelId = label.Id
+            });
+        }
         await _dbContext.SaveChangesAsync();
 
         foreach (var prerequisiteId in prerequisiteIds)
@@ -142,13 +188,17 @@ public class TicketsController : ControllerBase
             await _dbContext.SaveChangesAsync();
         }
 
+        var ticketLabelNames = existingLabels.Concat(newLabels)
+            .Select(l => l.Name)
+            .OrderBy(name => name)
+            .ToList();
 
         await transaction.CommitAsync();
-        return StatusCode(201, ToResponse(ticket, project.BaselineFrozenAt));
+        return StatusCode(201, ToResponse(ticket, project.BaselineFrozenAt, ticketLabelNames));
     }
 
 
-    private static TicketResponse ToResponse(Ticket t, DateTime? baselineFrozenAt)
+    private static TicketResponse ToResponse(Ticket t, DateTime? baselineFrozenAt, List<string> labels)
     {
         return new TicketResponse(
             t.Id,
@@ -160,7 +210,8 @@ public class TicketsController : ControllerBase
             t.PlannedStart,
             t.EstimatedHours,
             t.AssignedAgent,
-            baselineFrozenAt != null && t.CreatedAt > baselineFrozenAt
+            baselineFrozenAt != null && t.CreatedAt > baselineFrozenAt,
+            labels
         );
     }
 }
