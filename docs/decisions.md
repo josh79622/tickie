@@ -723,3 +723,38 @@ Example: QA ticket 1 reopened by Debug tickets 3, 4 and 5:
 - **Title in a text note:** goes stale on rename, can't be clicked.
 - **One `RelatedTicketId` column:** clickable, but only one cause per change.
 - **A list of Ids in one column:** no foreign key checks.
+
+---
+
+## 23. Prerequisites: a link table, same project only, set when a ticket is opened
+
+*Date: 2026-10-09 · Area: data model + manager API · Related: `brief.md` rule 10, "Ticket dependency table"*
+
+### Question
+
+A ticket can wait for other tickets (its prerequisites) before it starts. How do we store that, and what checks do we need?
+
+### Decision
+
+- A link table, `TicketDependencies`, with one row per "this ticket waits for that ticket": `TicketId` and `PrerequisiteTicketId`. The pair is the key, and both columns are foreign keys to `Tickets`.
+- A **check constraint** in the database, `CK_TicketDependencies_NotSelf` (`TicketId <> PrerequisiteTicketId`), so a ticket can never wait for itself.
+- Prerequisites are sent when a ticket is opened: `CreateTicketRequest` has an optional `PrerequisiteTicketIds` list.
+- The manager removes duplicates, then checks that every Id is a ticket **in the same project** (400 otherwise). It **counts** matches instead of checking one by one: if I send `[3, 4]` and it finds 2, they're all fine.
+- The rows are saved after the new ticket (they need its Id), inside the same transaction.
+
+### Why
+
+- **A link table, not a list in one column:** one ticket can wait for many, and each row gets the database's foreign key check.
+- **Two checks against "waits for itself":** the manager would give a clear message, and the check constraint is the safety net. Same idea as phase names: the manager explains, the database guarantees.
+- **Same project only:** each project is its own folder with its own agents, and the brief only describes prerequisites inside one project. Waiting across projects would also let a removed project block a ticket somewhere else. A different **phase** of the same project is fine (a Build ticket in phase 2 can wait for a Design ticket in phase 1).
+- **Remove duplicates first:** `[3, 3]` would try to save the same pair twice (the key refuses it), and the count check would see 1 found vs. 2 sent and wrongly refuse a valid request.
+- **No circle check needed yet.** A circle (A waits for B, B waits for A) needs a path back to the new ticket. A brand-new ticket has nobody waiting for it, so it can't close a circle. The circle check is needed once prerequisites can be **edited** on existing tickets.
+
+### Still to do
+
+- Actually blocking a ticket from starting until its prerequisites are Done or Canceled. That belongs to the status-change endpoints, which don't exist yet.
+- The circle check, when editing prerequisites is added.
+
+### Other options I said no to
+
+- **Prerequisites from any project:** more flexible, but nothing in the brief needs it, and it ties separate projects together.

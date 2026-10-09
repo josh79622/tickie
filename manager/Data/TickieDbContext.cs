@@ -70,6 +70,22 @@ public class TickieDbContext : DbContext
             .HasOne<Ticket>()
             .WithMany()
             .HasForeignKey(sct => sct.TicketId);
+
+        modelBuilder.Entity<TicketDependency>()
+            .HasKey(td => new { td.TicketId, td.PrerequisiteTicketId });
+
+        modelBuilder.Entity<TicketDependency>()
+            .HasOne<Ticket>()
+            .WithMany()
+            .HasForeignKey(td => td.TicketId);
+
+        modelBuilder.Entity<TicketDependency>()
+            .HasOne<Ticket>()
+            .WithMany()
+            .HasForeignKey(td => td.PrerequisiteTicketId);
+
+        modelBuilder.Entity<TicketDependency>()
+            .ToTable(t => t.HasCheckConstraint("CK_TicketDependencies_NotSelf", "\"TicketId\" <> \"PrerequisiteTicketId\""));
     }
 
     public DbSet<Project> Projects { get; set; }
@@ -79,4 +95,5 @@ public class TickieDbContext : DbContext
     public DbSet<UserSettings> UserSettings { get; set; }
     public DbSet<StatusChange> StatusChanges { get; set; }
     public DbSet<StatusChangeTicket> StatusChangeTickets { get; set; }
+    public DbSet<TicketDependency> TicketDependencies { get; set; }
 }
