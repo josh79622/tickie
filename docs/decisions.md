@@ -16,6 +16,7 @@ I built this with an AI tutor, but I didn't just accept what it suggested. These
 - **Entry 18:** I noticed the QA ticket would get `Order = 1` even though QA runs last. Following that up showed `Order` didn't do anything useful, so we removed it.
 - **Entry 22:** the suggestion was to name the added ticket by its title in a text note. I asked "what if the title changes?" and "what if I want to click it?", which turned the note into a real link. Then I asked whether one link is enough; several Debug tickets can reopen QA at once, so it became a link table.
 - **Entry 25:** in the "is this move allowed?" method, QA was the fallback for any type not checked above it. I asked why. A new ticket type would have silently used the QA rules, so now QA is checked by name, and an unknown type fails loudly.
+- **Entry 29:** I found it pointless to send the project Id when working on one ticket, since the ticket already knows its project. Addresses for one ticket became `/tickets/{id}/...`.
 
 In one sentence: *"I used AI to move faster, but I kept asking why each piece existed, and several fields and rules changed or disappeared because of that."*
 
@@ -881,3 +882,50 @@ Example: phase 6 has QA (waiting) and Build tickets A and B. A is Done, B is Wor
 
 - A phase with no other tickets at all counts as "everything finished", so its QA goes straight to Running once its tests are locked.
 - Running only changes the status. Actually starting the QA agent comes later, with agent runs.
+
+---
+
+## 28. Test cases: "locked" comes from the ticket's status
+
+*Date: 2026-10-16 · Area: data model + manager API · Related: `brief.md` rule 8, "Data model → Test case"*
+
+### Decision
+
+- `TestCase` has `Id`, `TicketId`, `Content` and `PassedOnLastRun` (`bool?`). There is **no** "is locked" field.
+- Test cases can only be added (and later changed or removed) while the ticket is in the **Test cases** step. At any other time the manager returns **409**: "Test cases are locked while the ticket is in …".
+- Design tickets have no test cases (400).
+- `GET /tickets/{ticketId}/testcases` lists them; `POST` adds one (`CreateTestCaseRequest`: only `Content`) and returns 201 with a `TestCaseResponse`.
+
+### Why
+
+- **Locked = "the ticket has moved past the Test cases step".** The status already says that, so a separate flag would be a second copy that could disagree (a ticket in Working with an unlocked checklist).
+- **Why lock at all:** the coding agent may read the checklist but not change it. Otherwise it could delete a test it fails. Like a teacher sealing exam questions before the students start. I can still unlock them with "edit test cases", which sends the ticket back to the Test cases step.
+- **`bool?` for "passed on last run":** three real answers. `true` passed, `false` failed, `null` never run. A plain `bool` would start as `false`, which would wrongly say "failed".
+- **409, not 400,** for the same reason as prerequisites: the request is fine; the ticket's current step blocks it.
+
+---
+
+## 29. Short addresses for one ticket: `/tickets/{id}/...`
+
+*Date: 2026-10-16 · Area: API addresses*
+
+### How it came up
+
+I found it pointless to send and check the project Id when working on one ticket.
+
+### Decision
+
+| What | Address |
+| --- | --- |
+| List a project's tickets, open a ticket | `/projects/{projectId}/tickets` |
+| Change one ticket's status | `PATCH /tickets/{id}/status` |
+| One ticket's test cases | `/tickets/{ticketId}/testcases` |
+
+A single method can skip its controller's address prefix by starting its route with `/` (e.g. `[HttpPatch("/tickets/{id}/status")]`).
+
+### Why
+
+- **The ticket already knows its project.** Ticket Ids never repeat, so asking for the project again adds work and a way to get it wrong (`/projects/2/tickets/5` when ticket 5 is in project 1).
+- **Common practice:** don't nest addresses more than one level. Ruby on Rails calls it "shallow nesting", and Jira uses `/issue/{id}`. GitHub nests (`/repos/{owner}/{repo}/issues/{number}`) only because issue numbers repeat across repositories.
+- **List and create stay under the project:** listing needs to know *which* project, and a new ticket has no Id yet.
+- **Controllers are grouped by what they work on, not by how the address starts.** Listing tickets stays in `TicketsController`, even though its address starts with `/projects`.

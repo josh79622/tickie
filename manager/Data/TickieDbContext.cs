@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using Microsoft.EntityFrameworkCore;
 using Tickie.Manager.Entities;
 
@@ -108,6 +109,11 @@ public class TickieDbContext : DbContext
             .HasOne<Label>()
             .WithMany()
             .HasForeignKey(tl => tl.LabelId);
+
+        modelBuilder.Entity<TestCase>()
+            .HasOne<Ticket>()
+            .WithMany()
+            .HasForeignKey(tc => tc.TicketId);
     }
 
     public DbSet<Project> Projects { get; set; }
@@ -120,4 +126,5 @@ public class TickieDbContext : DbContext
     public DbSet<TicketDependency> TicketDependencies { get; set; }
     public DbSet<Label> Labels { get; set; }
     public DbSet<TicketLabel> TicketLabels { get; set; }
+    public DbSet<TestCase> TestCases { get; set; }
 }

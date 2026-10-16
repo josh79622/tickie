@@ -198,28 +198,14 @@ public class TicketsController : ControllerBase
         return StatusCode(201, ToResponse(ticket, project.BaselineFrozenAt, ticketLabelNames));
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<ActionResult> ChangeStatus(int projectId, int id, ChangeStatusRequest request)
+    [HttpPatch("/tickets/{id}/status")]
+    public async Task<ActionResult> ChangeStatus(int id, ChangeStatusRequest request)
     {
-        var project = await _dbContext.Projects
-            .FirstOrDefaultAsync(p => p.Id == projectId && p.RemovedAt == null);
-
-        if (project == null)
-        {
-            return NotFound();
-        }
-
-        var phaseIds = await _dbContext.Phases
-            .Where(ph => ph.ProjectId == projectId)
-            .Select(ph => ph.Id)
-            .ToListAsync();
-
-        var ticket = await _dbContext.Tickets
-            .FirstOrDefaultAsync(t => t.Id == id && phaseIds.Contains(t.PhaseId));
+        var ticket = await _dbContext.Tickets.FindAsync(id);
 
         if (ticket == null)
         {
-            return NotFound(new {message = "Ticket not found in this project."});
+            return NotFound(new { message = "Ticket not found." });
         }
 
         if (!TicketFlow.IsAllowed(ticket.Type, ticket.Status, request.ToStatus))
