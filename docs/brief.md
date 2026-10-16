@@ -192,8 +192,8 @@ One row of app-wide settings.
 | Field | Source |
 | --- | --- |
 | Ticket, content | First draft by AI, reviewed by me |
-| Is locked | Locked when I finalize it |
-| Passed on last run | Updated by the system when tests run |
+| Is locked | Not stored; test cases can only be changed while the ticket is in the Test cases step, and are locked at every other time |
+| Passed on last run | Updated by the system when tests run; empty until the tests have run once |
 
 ### Status history
 

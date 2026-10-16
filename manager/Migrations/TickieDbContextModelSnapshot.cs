@@ -151,6 +151,29 @@ namespace Tickie.Manager.Migrations
                     b.ToTable("StatusChangeTickets");
                 });
 
+            modelBuilder.Entity("Tickie.Manager.Entities.TestCase", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool?>("PassedOnLastRun")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TicketId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId");
+
+                    b.ToTable("TestCases");
+                });
+
             modelBuilder.Entity("Tickie.Manager.Entities.Ticket", b =>
                 {
                     b.Property<int>("Id")
@@ -278,6 +301,15 @@ namespace Tickie.Manager.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Tickie.Manager.Entities.Ticket", null)
+                        .WithMany()
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Tickie.Manager.Entities.TestCase", b =>
+                {
                     b.HasOne("Tickie.Manager.Entities.Ticket", null)
                         .WithMany()
                         .HasForeignKey("TicketId")
